@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Build outputs
+frontend/build/
+backend/build/
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker volumes
+postgres_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Subprojects (managed in their own repos)
+betfront/
+frontbet/
+penaltyblog/
+OddsHarvester/
+soccerdata/
+flumine/
+
+# Large binary assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.mp4
+*.mov
+*.avi
+
+# Playwright
+.playwright-mcp/
+
+# Vite
+.vite/
+
+# pnpm
+.pnpm-store/
