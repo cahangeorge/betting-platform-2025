@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, Request, status
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,16 +10,26 @@ from app.models.user import User
 from app.services.auth import decode_token
 
 
+def _extract_token(request: Request, access_token: str | None = Cookie(default=None)) -> str | None:
+    """Extract JWT from Authorization header or httpOnly cookie (header takes priority)."""
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:]
+    return access_token
+
+
 async def get_current_user(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     access_token: str | None = Cookie(default=None),
 ) -> User:
-    if not access_token:
+    token = _extract_token(request, access_token)
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
         )
-    payload = decode_token(access_token)
+    payload = decode_token(token)
     if payload is None or payload.get("type") != "access":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

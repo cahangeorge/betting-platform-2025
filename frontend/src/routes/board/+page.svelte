@@ -4,11 +4,13 @@
 	import type { Match } from '$lib/types';
 	import Ticker from '$lib/components/Ticker.svelte';
 	import MatchCard from '$lib/components/MatchCard.svelte';
+	import MatchCardSkeleton from '$lib/components/MatchCardSkeleton.svelte';
 	import OddsTable from '$lib/components/OddsTable.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import Tabs from '$lib/components/ui/Tabs.svelte';
 	import { RefreshCw } from 'lucide-svelte';
+	import { fade } from 'svelte/transition';
 
 	let {
 		data
@@ -53,10 +55,10 @@
 	];
 </script>
 
-<div class="space-y-4">
+<div class="space-y-4" transition:fade={{ duration: 200 }}>
 	<div>
-		<h1 class="text-2xl font-extrabold font-sport" style="color: var(--text-primary);">ODDS BOARD</h1>
-		<p class="mt-1" style="color: var(--text-secondary);">Live odds ticker and match board</p>
+		<h1 class="text-2xl font-extrabold font-sport text-foreground">ODDS BOARD</h1>
+		<p class="mt-1 text-muted-foreground">Live odds ticker and match board</p>
 	</div>
 
 	<Ticker matches={upcomingMatches} />
@@ -67,8 +69,7 @@
 		<div class="flex items-center space-x-2">
 			{#if loading}
 				<div
-					class="w-4 h-4 rounded-full animate-spin"
-					style="border: 2px solid var(--border-subtle); border-top-color: var(--accent-green);"
+					class="w-4 h-4  animate-spin border-2 border-border border-t-football-green"
 				></div>
 			{/if}
 			<Button onclick={refresh} variant="ghost" size="sm">
@@ -79,12 +80,18 @@
 	</div>
 
 	{#if error}
-		<div class="p-3 text-sm border" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 0;">{error}</div>
+		<div class="p-3 text-sm border bg-destructive/10 border-destructive/30 text-destructive ">{error}</div>
 	{/if}
 
 	{#if activeTab === 'grid'}
-		{#if upcomingMatches.length === 0}
-			<div class="text-center py-12" style="color: var(--text-secondary);">
+		{#if loading && matches.length === 0}
+			<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+				{#each Array(6) as _}
+					<MatchCardSkeleton />
+				{/each}
+			</div>
+		{:else if upcomingMatches.length === 0}
+			<div class="text-center py-12 text-muted-foreground">
 				<p class="text-lg">No matches available</p>
 				<p class="text-sm mt-1">Check back later for upcoming fixtures</p>
 			</div>

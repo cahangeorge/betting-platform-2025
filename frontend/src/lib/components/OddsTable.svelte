@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Match } from '$lib/types';
 	import Badge from './ui/Badge.svelte';
+	import Button from './ui/Button.svelte';
+	import { cn } from '$lib/utils';
 
 	let {
 		matches
@@ -27,96 +29,93 @@
 
 <div class="space-y-4">
 	<div class="flex items-center space-x-3 overflow-x-auto pb-2">
-		<button
-			class="px-3 py-1.5 text-xs font-medium transition-all duration-200 ease-out"
-			style={selectedLeague === 'all'
-				? 'background-color: rgba(74, 222, 128, 0.1); color: var(--accent-green); border: 1px solid rgba(74, 222, 128, 0.3); border-radius: 0;'
-				: 'background-color: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border-subtle); border-radius: 0;'}
+		<Button
+			variant={selectedLeague === 'all' ? 'primary' : 'secondary'}
+			size="sm"
 			onclick={() => (selectedLeague = 'all')}
 		>
 			All Leagues
-		</button>
+		</Button>
 		{#each leagues as league (league)}
-			<button
-				class="px-3 py-1.5 text-xs font-medium transition-all duration-200 ease-out whitespace-nowrap"
-				style={selectedLeague === league
-					? 'background-color: rgba(74, 222, 128, 0.1); color: var(--accent-green); border: 1px solid rgba(74, 222, 128, 0.3); border-radius: 0;'
-					: 'background-color: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border-subtle); border-radius: 0;'}
+			<Button
+				variant={selectedLeague === league ? 'primary' : 'secondary'}
+				size="sm"
+				class="whitespace-nowrap"
 				onclick={() => (selectedLeague = league)}
 			>
 				{league}
-			</button>
+			</Button>
 		{/each}
 	</div>
 
-	<div class="overflow-x-auto border" style="border-color: var(--border-subtle); border-radius: 0;">
+	<div class="overflow-x-auto  border border-border">
 		<table class="w-full text-sm">
 			<thead>
-				<tr style="background-color: var(--bg-elevated);">
-					<th class="px-3 py-3 text-left text-xs uppercase tracking-wider" style="color: var(--text-secondary); font-family: var(--font-body);">Match</th>
-					<th class="px-3 py-3 text-left text-xs uppercase tracking-wider" style="color: var(--text-secondary); font-family: var(--font-body);">League</th>
-					<th class="px-3 py-3 text-center text-xs uppercase tracking-wider" style="color: var(--text-secondary); font-family: var(--font-body);">Date</th>
+				<tr class="bg-muted">
+					<th class="px-3 py-3 text-left text-xs uppercase tracking-wider text-muted-foreground font-sans">Match</th>
+					<th class="px-3 py-3 text-left text-xs uppercase tracking-wider text-muted-foreground font-sans">League</th>
+					<th class="px-3 py-3 text-center text-xs uppercase tracking-wider text-muted-foreground font-sans">Date</th>
 					{#each bookmakers as bm (bm)}
-						<th class="px-3 py-3 text-center text-xs uppercase tracking-wider" colspan="3" style="color: var(--text-secondary); font-family: var(--font-body);">
+						<th class="px-3 py-3 text-center text-xs uppercase tracking-wider text-muted-foreground font-sans" colspan="3">
 							{bm}
 						</th>
 					{/each}
-					<th class="px-3 py-3 text-center text-xs uppercase tracking-wider" colspan="3" style="color: var(--accent-green); font-family: var(--font-body);">
+					<th class="px-3 py-3 text-center text-xs uppercase tracking-wider text-football-green font-sans">
 						Best
 					</th>
 				</tr>
-					{#if bookmakers.length > 0}
-						<tr class="text-xs" style="color: var(--text-secondary); background-color: var(--bg-surface);">
-							<th colspan="3"></th>
-							{#each bookmakers as bm (bm)}
-								<th class="px-1 py-1 text-center font-normal font-mono">1</th>
-								<th class="px-1 py-1 text-center font-normal font-mono">X</th>
-								<th class="px-1 py-1 text-center font-normal font-mono">2</th>
-							{/each}
-							<th class="px-1 py-1 text-center font-normal font-mono" style="color: var(--accent-green);">1</th>
-							<th class="px-1 py-1 text-center font-normal font-mono" style="color: var(--accent-gold);">X</th>
-							<th class="px-1 py-1 text-center font-normal font-mono" style="color: var(--accent-blue);">2</th>
-						</tr>
-					{/if}
+				{#if bookmakers.length > 0}
+					<tr class="text-xs text-muted-foreground bg-background">
+						<th colspan="3"></th>
+						{#each bookmakers as bm (bm)}
+							<th class="px-1 py-1 text-center font-normal font-mono">1</th>
+							<th class="px-1 py-1 text-center font-normal font-mono">X</th>
+							<th class="px-1 py-1 text-center font-normal font-mono">2</th>
+						{/each}
+						<th class="px-1 py-1 text-center font-normal font-mono text-football-green">1</th>
+						<th class="px-1 py-1 text-center font-normal font-mono text-football-gold">X</th>
+						<th class="px-1 py-1 text-center font-normal font-mono text-football-blue">2</th>
+					</tr>
+				{/if}
 			</thead>
 			<tbody>
 				{#each filteredMatches as match (match.id)}
-					<tr class="transition-colors duration-200 odds-row" style="border-bottom: 1px solid var(--border-subtle);">
+					<tr class="transition-colors duration-200 border-b border-border hover:bg-muted">
 						<td class="px-3 py-3">
-							<div style="color: var(--text-primary); font-weight: 500; font-family: var(--font-sport);">{match.home_team}</div>
-							<div style="color: var(--text-secondary);">{match.away_team}</div>
+							<div class="text-foreground font-medium font-sport">{match.home_team}</div>
+							<div class="text-muted-foreground">{match.away_team}</div>
 						</td>
-						<td class="px-3 py-3 text-xs font-mono" style="color: var(--text-secondary);">{match.league}</td>
-						<td class="px-3 py-3 text-xs text-center font-mono" style="color: var(--text-secondary);">
+						<td class="px-3 py-3 text-xs font-mono text-muted-foreground">{match.league}</td>
+						<td class="px-3 py-3 text-xs text-center font-mono text-muted-foreground">
 							{new Date(match.start_time).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
 						</td>
 						{#each bookmakers as bm (bm)}
 							{@const odds = match.odds.find((o) => o.bookmaker === bm)}
 							{@const maxHome = Math.max(...match.odds.map((o) => o.home_odds), 0)}
 							{@const maxAway = Math.max(...match.odds.map((o) => o.away_odds), 0)}
-							<td class="px-3 py-3 text-center font-mono text-sm" style={odds && odds.home_odds === maxHome ? 'color: var(--accent-green); font-weight: 600;' : 'color: var(--text-primary);'}>
+							<td class="px-3 py-3 text-center font-mono text-sm {odds && odds.home_odds === maxHome ? 'text-football-green font-semibold' : 'text-foreground'}">
 								{odds ? odds.home_odds.toFixed(2) : '-'}
 							</td>
-							<td class="px-3 py-3 text-center font-mono text-sm" style="color: var(--text-secondary);">
+							<td class="px-3 py-3 text-center font-mono text-sm text-muted-foreground">
 								{odds && odds.draw_odds ? odds.draw_odds.toFixed(2) : '-'}
 							</td>
-							<td class="px-3 py-3 text-center font-mono text-sm" style={odds && odds.away_odds === maxAway ? 'color: var(--accent-blue); font-weight: 600;' : 'color: var(--text-primary);'}>
+							<td class="px-3 py-3 text-center font-mono text-sm {odds && odds.away_odds === maxAway ? 'text-football-blue font-semibold' : 'text-foreground'}">
 								{odds ? odds.away_odds.toFixed(2) : '-'}
 							</td>
 						{/each}
-						<td class="px-3 py-3 text-center font-mono font-bold" style="color: var(--accent-green);">
+						<td class="px-3 py-3 text-center font-mono font-bold text-football-green">
 							{Math.max(...match.odds.map(o => o.home_odds), 0) > 0 ? Math.max(...match.odds.map(o => o.home_odds), 0).toFixed(2) : '-'}
 						</td>
-						<td class="px-3 py-3 text-center font-mono font-bold" style="color: var(--accent-gold);">
+						<td class="px-3 py-3 text-center font-mono font-bold text-football-gold">
 							{Math.max(...match.odds.filter(o => o.draw_odds).map(o => o.draw_odds as number), 0) > 0 ? Math.max(...match.odds.filter(o => o.draw_odds).map(o => o.draw_odds as number), 0).toFixed(2) : '-'}
 						</td>
-						<td class="px-3 py-3 text-center font-mono font-bold" style="color: var(--accent-blue);">
+						<td class="px-3 py-3 text-center font-mono font-bold text-football-blue">
 							{Math.max(...match.odds.map(o => o.away_odds), 0) > 0 ? Math.max(...match.odds.map(o => o.away_odds), 0).toFixed(2) : '-'}
 						</td>
 					</tr>
 				{:else}
 					<tr>
-						<td colspan={3 + bookmakers.length * 3 + 3} class="px-4 py-12 text-center" style="color: var(--text-secondary);">
+						<td colspan={3 + bookmakers.length * 3 + 3} class="px-4 py-12 text-center text-muted-foreground">
 							No matches available
 						</td>
 					</tr>
@@ -125,9 +124,3 @@
 		</table>
 	</div>
 </div>
-
-<style>
-	.odds-row:hover {
-		background-color: var(--bg-elevated);
-	}
-</style>

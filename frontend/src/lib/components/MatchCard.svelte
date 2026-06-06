@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Match } from '$lib/types';
 	import Badge from './ui/Badge.svelte';
+	import Card from './ui/Card.svelte';
+	import OddsComparisonChart from './charts/OddsComparisonChart.svelte';
 
 	let {
 		match
@@ -40,50 +42,44 @@
 		cancelled: 'danger'
 	};
 
-	const statusBorder: Record<string, string> = {
-		scheduled: 'var(--accent-blue)',
-		live: 'var(--accent-green)',
-		finished: 'var(--border-subtle)',
-		postponed: 'var(--accent-gold)',
-		cancelled: 'var(--danger)'
+	const statusBorderClass: Record<string, string> = {
+		scheduled: 'border-t-football-blue',
+		live: 'border-t-football-green',
+		finished: 'border-t-border',
+		postponed: 'border-t-football-gold',
+		cancelled: 'border-t-destructive'
 	};
 </script>
 
-<div class="card p-4 card-interactive" style="border-top: 2px solid {statusBorder[match.status] || 'var(--border-subtle)'};">
+<Card class="p-4 {statusBorderClass[match.status] || 'border-t-border'}" interactive aria-label="{match.home_team} vs {match.away_team}, {match.league}, {match.status}">
 	<div class="flex items-center justify-between mb-3">
 		<div class="flex items-center space-x-2">
-			<span class="text-xs font-mono" style="color: var(--text-secondary);">{match.league}</span>
+			<span class="text-xs font-mono text-muted-foreground">{match.league}</span>
 			<Badge variant={statusVariant[match.status] || 'default'}>{match.status}</Badge>
 			{#if match.status === 'live'}
 				<span class="relative flex h-2 w-2">
-					<span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: var(--accent-green);"></span>
-					<span class="relative inline-flex rounded-full h-2 w-2" style="background-color: var(--accent-green);"></span>
+					<span class="animate-ping absolute inline-flex h-full w-full  opacity-75 bg-football-green"></span>
+					<span class="relative inline-flex  h-2 w-2 bg-football-green"></span>
 				</span>
 			{/if}
 		</div>
-		<span class="text-xs font-mono" style="color: var(--text-muted);">{matchDate}</span>
+		<span class="text-xs font-mono text-muted-foreground">{matchDate}</span>
 	</div>
 
 	<div class="space-y-2">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center space-x-2">
-				<div
-					class="w-6 h-6 flex items-center justify-center text-[10px] font-bold"
-					style="background-color: var(--bg-elevated); color: var(--accent-green); border: 1px solid var(--border-subtle); border-radius: 0;"
-				>
+				<div class="w-6 h-6 flex items-center justify-center text-[10px] font-bold  bg-muted text-football-green border border-border">
 					H
 				</div>
-				<span class="text-sm font-medium font-sport" style="color: var(--text-primary);">{match.home_team}</span>
+				<span class="text-sm font-medium font-sport text-foreground">{match.home_team}</span>
 			</div>
 			{#if match.home_score !== null}
-				<span class="text-lg font-bold font-mono" style="color: var(--text-primary);">{match.home_score}</span>
+				<span class="text-lg font-bold font-mono text-foreground">{match.home_score}</span>
 			{/if}
 			<div class="flex items-center space-x-1">
 				{#if bestHomeOdds > 0}
-					<span
-						class="text-sm font-mono font-semibold px-2 py-0.5"
-						style="background-color: rgba(74, 222, 128, 0.1); color: var(--accent-green); border: 1px solid rgba(74, 222, 128, 0.2); border-radius: 0; font-family: 'JetBrains Mono', monospace;"
-					>
+					<span class="text-sm font-mono font-semibold px-2 py-0.5  bg-football-green/10 text-football-green border border-football-green/20">
 						{bestHomeOdds.toFixed(2)}
 					</span>
 				{/if}
@@ -92,23 +88,17 @@
 
 		<div class="flex items-center justify-between">
 			<div class="flex items-center space-x-2">
-				<div
-					class="w-6 h-6 flex items-center justify-center text-[10px] font-bold"
-					style="background-color: var(--bg-elevated); color: var(--accent-blue); border: 1px solid var(--border-subtle); border-radius: 0;"
-				>
+				<div class="w-6 h-6 flex items-center justify-center text-[10px] font-bold  bg-muted text-football-blue border border-border">
 					A
 				</div>
-				<span class="text-sm font-medium font-sport" style="color: var(--text-primary);">{match.away_team}</span>
+				<span class="text-sm font-medium font-sport text-foreground">{match.away_team}</span>
 			</div>
 			{#if match.away_score !== null}
-				<span class="text-lg font-bold font-mono" style="color: var(--text-primary);">{match.away_score}</span>
+				<span class="text-lg font-bold font-mono text-foreground">{match.away_score}</span>
 			{/if}
 			<div class="flex items-center space-x-1">
 				{#if bestAwayOdds > 0}
-					<span
-						class="text-sm font-mono font-semibold px-2 py-0.5"
-						style="background-color: rgba(56, 189, 248, 0.1); color: var(--accent-blue); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 0; font-family: 'JetBrains Mono', monospace;"
-					>
+					<span class="text-sm font-mono font-semibold px-2 py-0.5  bg-football-blue/10 text-football-blue border border-football-blue/20">
 						{bestAwayOdds.toFixed(2)}
 					</span>
 				{/if}
@@ -116,9 +106,15 @@
 		</div>
 
 		{#if match.odds.length > 1}
-			<div class="pt-2 border-t" style="border-color: var(--border-subtle);">
-				<p class="text-xs font-mono" style="color: var(--text-muted);">Best odds from <span style="color: var(--accent-green);">{bestBookmaker}</span></p>
+			<div class="pt-2 border-t border-border">
+				<p class="text-xs font-mono text-muted-foreground">Best odds from <span class="text-football-green">{bestBookmaker}</span></p>
+				{#if match.odds.length > 2}
+					<div class="mt-2">
+						<div class="text-xs uppercase tracking-wider mb-2 text-muted-foreground">Odds Comparison</div>
+						<OddsComparisonChart data={match.odds.map(o => ({ bookmaker: o.bookmaker, odds: o.home_odds }))} />
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
-</div>
+</Card>

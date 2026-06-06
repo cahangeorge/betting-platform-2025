@@ -1,7 +1,7 @@
 FROM nginx:1.27-alpine
 
-RUN addgroup -S -g 101 nginx && \
-    adduser -S -D -H -u 101 -G nginx nginx
+RUN (getent group nginx || addgroup -S -g 101 nginx) && \
+    (id -u nginx || adduser -S -D -H -u 101 -G nginx nginx)
 
 RUN rm -f /etc/nginx/conf.d/default.conf
 

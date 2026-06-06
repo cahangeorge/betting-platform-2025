@@ -13,7 +13,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://localhost:5174,http://localhost:3000,http://localhost:3002,http://localhost:8080"
+
+    cookie_secure: bool = False
 
     penaltyblog_python: str = ""
     penaltyblog_bridge: str = ""

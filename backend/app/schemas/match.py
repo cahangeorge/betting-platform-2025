@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class OddsEntryResponse(BaseModel):
@@ -54,11 +54,32 @@ class MatchResponse(BaseModel):
     home_score: int | None = None
     away_score: int | None = None
     status: str = "scheduled"
-    match_date: datetime | None = None
-    competition: str | None = None
+    start_time: str | None = None
+    league: str | None = None
     season: str | None = None
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def map_fields(cls, data):
+        """Map ORM fields to API fields."""
+        if hasattr(data, "match_date"):
+            md = data.match_date
+            data_dict = {}
+            for k in ("id", "external_id", "home_team", "away_team", "home_score", "away_score", "status", "season", "created_at", "updated_at"):
+                data_dict[k] = getattr(data, k, None)
+            data_dict["start_time"] = md.isoformat() if md else None
+            data_dict["league"] = getattr(data, "competition", None)
+            return data_dict
+        if isinstance(data, dict):
+            if "match_date" in data and "start_time" not in data:
+                md = data.pop("match_date")
+                data["start_time"] = md.isoformat() if md else None
+            if "competition" in data and "league" not in data:
+                data["league"] = data.pop("competition")
+            return data
+        return data
 
 
 class MatchDetailResponse(MatchResponse):

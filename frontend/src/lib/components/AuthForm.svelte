@@ -71,7 +71,7 @@
 
 <form onsubmit={handleSubmit} class="space-y-5">
 	{#if error}
-		<div class="p-3 text-sm" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 0;">
+		<div class="p-3 text-sm  bg-destructive/10 border border-destructive/30 text-destructive">
 			{error}
 		</div>
 	{/if}
@@ -121,11 +121,11 @@
 
 	<div class="flex items-center justify-between pt-2">
 		{#if mode === 'login'}
-			<a href="/signup" class="text-sm transition-colors duration-200" style="color: var(--accent-green);">
+			<a href="/signup" class="text-sm text-football-green hover:text-football-green/80 transition-colors">
 				No account yet? Sign up
 			</a>
 		{:else}
-			<a href="/login" class="text-sm transition-colors duration-200" style="color: var(--accent-green);">
+			<a href="/login" class="text-sm text-football-green hover:text-football-green/80 transition-colors">
 				Already have an account? Sign in
 			</a>
 		{/if}
@@ -133,7 +133,7 @@
 
 	<Button type="submit" fullWidth disabled={loading}>
 		{#if loading}
-			<div class="w-4 h-4 border-2 border-[#0F172A] border-t-transparent animate-spin mr-2" style="border-radius: 50%;"></div>
+			<div class="w-4 h-4 border-2 border-primary-foreground border-t-transparent animate-spin  mr-2"></div>
 		{/if}
 		{mode === 'login' ? 'Sign In' : 'Create Account'}
 	</Button>

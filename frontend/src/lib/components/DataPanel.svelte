@@ -109,18 +109,18 @@
 	{#if loading && jobs.length === 0}
 		<Loading message="Loading data module..." />
 	{:else if error}
-		<div class="p-4 border text-sm" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 0;">{error}</div>
+		<div class="p-4  text-sm bg-destructive/10 border border-destructive/30 text-destructive">{error}</div>
 		<Button onclick={loadData}>Retry</Button>
 	{:else}
 		<Tabs bind:activeTab {tabs}>
 			{#if activeTab === 'jobs'}
 				<div class="space-y-4">
 					{#if showNewJob}
-						<div class="card p-4" style="border-top: 2px solid var(--accent-blue);">
-							<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">New Scrape Job</h3>
+						<Card class="p-4 border-t-football-blue">
+							<h3 class="text-lg font-semibold mb-4 text-foreground">New Scrape Job</h3>
 							<form onsubmit={(e) => { e.preventDefault(); createJob(); }} class="space-y-4">
 								{#if newJobError}
-									<div class="p-3 text-sm" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 0;">{newJobError}</div>
+									<div class="p-3 text-sm  bg-destructive/10 border border-destructive/30 text-destructive">{newJobError}</div>
 								{/if}
 								<Select
 									label="Job Type"
@@ -128,10 +128,10 @@
 									options={jobTypeOptions}
 								/>
 								<div>
-									<p class="label">Parameters (JSON)</p>
+									<p class="text-sm font-medium text-foreground mb-1.5">Parameters (JSON)</p>
 									<textarea
 										bind:value={newJobParams}
-										class="input font-mono text-xs h-24 resize-none"
+										class="w-full font-mono text-xs h-24 resize-none  border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-ring outline-none"
 										placeholder={`{"league": "EPL", "season": "2024/2025"}`}
 									></textarea>
 								</div>
@@ -142,7 +142,7 @@
 									<Button variant="ghost" onclick={() => (showNewJob = false)}>Cancel</Button>
 								</div>
 							</form>
-						</div>
+						</Card>
 					{:else}
 						<Button onclick={() => (showNewJob = true)} variant="secondary">
 							+ New Scrape Job
@@ -150,7 +150,7 @@
 					{/if}
 
 					{#if jobs.length === 0}
-						<p class="text-center py-8" style="color: var(--text-muted);">No jobs created yet</p>
+						<p class="text-center py-8 text-muted-foreground">No jobs created yet</p>
 					{:else}
 						<div class="space-y-3">
 							{#each jobs as job (job.id)}
@@ -158,20 +158,20 @@
 									<div class="flex items-center justify-between">
 										<div class="flex items-center space-x-3">
 											<Badge variant={statusBadge[job.status] || 'default'}>{job.status}</Badge>
-											<span class="text-sm font-medium" style="color: var(--text-primary);">{job.type.replace('_', ' ')}</span>
+											<span class="text-sm font-medium text-foreground">{job.type.replace('_', ' ')}</span>
 										</div>
 										<div class="flex items-center space-x-3">
 											{#if job.status === 'running' || job.status === 'queued'}
-												<div class="w-24 h-1.5" style="background: var(--bg-elevated);">
-													<div class="h-1.5 transition-all" style="width: {job.progress}%; background: var(--accent-green);"></div>
+												<div class="w-24 h-1.5  bg-muted">
+													<div class="h-1.5  transition-all bg-football-green" style="width: {job.progress}%;"></div>
 												</div>
 												<Button size="sm" variant="danger" onclick={() => cancelJob(job.id)}>Cancel</Button>
 											{/if}
-											<span class="text-xs" style="color: var(--text-muted);">{new Date(job.created_at).toLocaleString()}</span>
+											<span class="text-xs text-muted-foreground">{new Date(job.created_at).toLocaleString()}</span>
 										</div>
 									</div>
 									{#if job.error}
-										<div class="mt-2 p-2 text-xs" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger); border-radius: 0;">{job.error}</div>
+										<div class="mt-2 p-2 text-xs  bg-destructive/10 text-destructive">{job.error}</div>
 									{/if}
 								</Card>
 							{/each}
@@ -181,23 +181,23 @@
 
 			{:else if activeTab === 'datasets'}
 				{#if datasets.length === 0}
-					<p class="text-center py-8" style="color: var(--text-muted);">No datasets available</p>
+					<p class="text-center py-8 text-muted-foreground">No datasets available</p>
 				{:else}
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						{#each datasets as ds (ds.id)}
 							<Card>
 								<div class="space-y-2">
-									<h4 class="font-medium" style="color: var(--text-primary);">{ds.name}</h4>
-									<div class="flex items-center space-x-2 text-xs" style="color: var(--text-muted);">
+									<h4 class="font-medium text-foreground">{ds.name}</h4>
+									<div class="flex items-center space-x-2 text-xs text-muted-foreground">
 										<Badge>{ds.source}</Badge>
 										<span>{ds.league}</span>
 										<span>{ds.season}</span>
 									</div>
-									<div class="flex justify-between text-sm" style="color: var(--text-secondary);">
+									<div class="flex justify-between text-sm text-muted-foreground">
 										<span>{ds.row_count.toLocaleString()} rows</span>
 										<span>{formatBytes(ds.size_bytes)}</span>
 									</div>
-									<p class="text-xs" style="color: var(--text-muted);">{ds.columns.length} columns</p>
+									<p class="text-xs text-muted-foreground">{ds.columns.length} columns</p>
 								</div>
 							</Card>
 						{/each}
@@ -206,11 +206,11 @@
 
 			{:else if activeTab === 'leagues'}
 				{#if leagues.length === 0}
-					<p class="text-center py-8" style="color: var(--text-muted);">No leagues configured</p>
+					<p class="text-center py-8 text-muted-foreground">No leagues configured</p>
 				{:else}
 					<div class="overflow-x-auto">
 						<table class="w-full text-sm">
-							<thead class="text-xs uppercase" style="background-color: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: var(--font-body);">
+							<thead class="text-xs uppercase bg-muted border-b border-border text-muted-foreground font-sans">
 								<tr>
 									<th class="px-4 py-3 text-left">Name</th>
 									<th class="px-4 py-3 text-left">Country</th>
@@ -220,10 +220,10 @@
 							</thead>
 							<tbody>
 								{#each leagues as league (league.id)}
-									<tr class="transition-colors duration-200" style="border-bottom: 1px solid var(--border-subtle);">
-										<td class="px-4 py-3 font-medium" style="color: var(--text-primary);">{league.name}</td>
-										<td class="px-4 py-3" style="color: var(--text-muted);">{league.country}</td>
-										<td class="px-4 py-3" style="color: var(--text-muted);">{league.sport}</td>
+									<tr class="transition-colors duration-200 border-b border-border hover:bg-muted">
+										<td class="px-4 py-3 font-medium text-foreground">{league.name}</td>
+										<td class="px-4 py-3 text-muted-foreground">{league.country}</td>
+										<td class="px-4 py-3 text-muted-foreground">{league.sport}</td>
 										<td class="px-4 py-3">
 											<Badge variant={league.is_active ? 'success' : 'default'}>
 												{league.is_active ? 'Active' : 'Inactive'}
@@ -231,10 +231,10 @@
 										</td>
 									</tr>
 								{:else}
-										<tr>
-											<td colspan="4" class="px-4 py-8 text-center" style="color: var(--text-muted);">No leagues found</td>
-										</tr>
-									{/each}
+									<tr>
+										<td colspan="4" class="px-4 py-8 text-center text-muted-foreground">No leagues found</td>
+									</tr>
+								{/each}
 							</tbody>
 						</table>
 					</div>
@@ -243,9 +243,3 @@
 		</Tabs>
 	{/if}
 </div>
-
-<style>
-	tbody tr:hover {
-		background-color: var(--bg-elevated);
-	}
-</style>

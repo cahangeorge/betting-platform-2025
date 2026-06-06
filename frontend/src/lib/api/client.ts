@@ -1,7 +1,6 @@
-import { browser } from '$app/environment';
-import type { ApiError } from '$lib/types';
-
-const BASE_URL = (browser ? (import.meta as Record<string, any>).env?.PUBLIC_API_URL : undefined) || 'http://localhost:8000';
+// PUBLIC_API_URL: empty string = relative URLs (nginx proxy), http://localhost:8001 for local dev
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const BASE_URL: string = (import.meta as any).env?.PUBLIC_API_URL || '';
 
 export class ApiClient {
 	private baseUrl: string;

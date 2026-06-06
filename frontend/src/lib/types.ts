@@ -283,6 +283,34 @@ export interface ScheduledJobCreateRequest {
 	params?: Record<string, unknown>;
 }
 
+// ─── Strategy Run Results ─────────────────────────────
+export interface StrategyCreateRequest {
+	name: string;
+	model_type: string;
+	description?: string;
+	parameters?: Record<string, unknown>;
+}
+
+export interface StrategyRunRequest {
+	match_ids: number[];
+	markets: string[];
+	parameters?: Record<string, unknown>;
+}
+
+export interface StrategyRunResult {
+	strategy_id: number;
+	match_id: number;
+	match_home: string;
+	match_away: string;
+	league: string;
+	market: string;
+	predicted: string;
+	probability: number;
+	confidence: number;
+	edge: number;
+	odds: number;
+}
+
 // ─── API Error ─────────────────────────────────────────
 export interface ApiError {
 	detail: string;
@@ -294,4 +322,98 @@ export interface PollingState<T> {
 	data: T | null;
 	loading: boolean;
 	error: string | null;
+}
+
+// ─── Dashboard ────────────────────────────────────────
+export interface DashboardSummary {
+	total_matches: number;
+	total_tickets: number;
+	win_rate: number;
+	total_pnl: number;
+	active_bankroll: number;
+	pending_bets: number;
+}
+
+export interface JobLog {
+	id: number;
+	name: string;
+	type: string;
+	status: string;
+	progress: number;
+	created_at: string;
+	completed_at: string | null;
+	error: string | null;
+	duration_seconds: number | null;
+}
+
+// ─── Analytics ────────────────────────────────────────
+export interface PnlPoint {
+	date: string;
+	pnl: number;
+	cumulative_pnl: number;
+	bets_count: number;
+	wins: number;
+}
+
+// ─── Catalog ──────────────────────────────────────────
+export interface Country {
+	country: string;
+	leagues: LeagueInfo[];
+}
+
+export interface LeagueInfo {
+	id: string;
+	name: string;
+	matches_count: number;
+}
+
+// ─── Strategies ───────────────────────────────────────
+export interface Strategy {
+	id: number;
+	name: string;
+	model_type: string;
+	description: string | null;
+	parameters: Record<string, unknown>;
+	weights: Record<string, unknown> | null;
+	is_active: boolean;
+	created_at: string;
+	updated_at: string;
+	last_run: string | null;
+	avg_edge: number | null;
+	avg_win_rate: number | null;
+}
+
+// ─── Extended Dashboard Types ─────────────────────────
+export interface DashboardTicket {
+	id: number;
+	reference: string;
+	type: TicketType;
+	status: TicketStatus;
+	stake: number;
+	total_odds: number;
+	potential_return: number;
+	actual_return: number | null;
+	legs: {
+		match_id: number;
+		home_team: string;
+		away_team: string;
+		market: string;
+		selection: string;
+		odds: number;
+		status: string;
+		home_score: number | null;
+		away_score: number | null;
+	}[];
+	created_at: string;
+}
+
+export interface UpcomingMatch {
+	id: number;
+	league: string;
+	home_team: string;
+	away_team: string;
+	start_time: string;
+	home_odds: number | null;
+	draw_odds: number | null;
+	away_odds: number | null;
 }

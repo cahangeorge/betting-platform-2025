@@ -9,33 +9,33 @@ import type {
 
 class BankrollApi extends ApiClient {
 	async getBankrolls(): Promise<Bankroll[]> {
-		return this.get<Bankroll[]>('/bankrolls');
+		return this.get<Bankroll[]>('/api/v1/bankroll');
 	}
 
 	async getBankroll(id: number): Promise<Bankroll> {
-		return this.get<Bankroll>(`/bankrolls/${id}`);
+		return this.get<Bankroll>(`/api/v1/bankroll/${id}`);
 	}
 
 	async createBankroll(data: BankrollCreateRequest): Promise<Bankroll> {
-		return this.post<Bankroll>('/bankrolls', data as unknown as Record<string, unknown>);
+		return this.post<Bankroll>('/api/v1/bankroll', data as unknown as Record<string, unknown>);
 	}
 
 	async deleteBankroll(id: number): Promise<void> {
-		return this.del<void>(`/bankrolls/${id}`);
+		return this.del<void>(`/api/v1/bankroll/${id}`);
 	}
 
 	async getAccounts(bankrollId?: number): Promise<BookmakerAccount[]> {
-		const params = bankrollId ? `?bankroll_id=${bankrollId}` : '';
-		return this.get<BookmakerAccount[]>(`/bankrolls/accounts${params}`);
+		const bid = bankrollId || 1;
+		return this.get<BookmakerAccount[]>(`/api/v1/bankroll/${bid}/accounts`);
 	}
 
 	async createAccount(data: BookmakerAccountCreateRequest): Promise<BookmakerAccount> {
-		return this.post<BookmakerAccount>('/bankrolls/accounts', data as unknown as Record<string, unknown>);
+		return this.post<BookmakerAccount>(`/api/v1/bankroll/${data.bankroll_id}/accounts`, data as unknown as Record<string, unknown>);
 	}
 
 	async getLedger(bankrollId?: number): Promise<LedgerEntry[]> {
-		const params = bankrollId ? `?bankroll_id=${bankrollId}` : '';
-		return this.get<LedgerEntry[]>(`/bankrolls/ledger${params}`);
+		const bid = bankrollId || 1;
+		return this.get<LedgerEntry[]>(`/api/v1/bankroll/${bid}/ledger`);
 	}
 }
 

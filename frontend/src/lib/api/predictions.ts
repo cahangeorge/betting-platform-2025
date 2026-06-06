@@ -10,27 +10,35 @@ import type {
 
 class PredictionsApi extends ApiClient {
 	async getModels(): Promise<PredictionModel[]> {
-		return this.get<PredictionModel[]>('/predict/models');
+		return this.get<PredictionModel[]>('/api/v1/predictions/catalog');
 	}
 
 	async getRuns(): Promise<PredictionRun[]> {
-		return this.get<PredictionRun[]>('/predict/runs');
+		return this.get<PredictionRun[]>('/api/v1/predictions/runs');
 	}
 
 	async getRun(id: number): Promise<PredictionRun> {
-		return this.get<PredictionRun>(`/predict/runs/${id}`);
+		return this.get<PredictionRun>(`/api/v1/predictions/runs/${id}`);
 	}
 
 	async createRun(data: RunRequest): Promise<PredictionRun> {
-		return this.post<PredictionRun>('/predict/runs', data as unknown as Record<string, unknown>);
+		return this.post<PredictionRun>('/api/v1/predictions/run', data as unknown as Record<string, unknown>);
 	}
 
 	async getEnsemble(runId: number): Promise<EnsembleResult> {
-		return this.get<EnsembleResult>(`/predict/runs/${runId}/ensemble`);
+		return this.post<EnsembleResult>(`/api/v1/predictions/ensemble`, { run_id: runId } as unknown as Record<string, unknown>);
 	}
 
 	async runBacktest(data: BacktestRequest): Promise<BacktestResult> {
-		return this.post<BacktestResult>('/predict/backtest', data as unknown as Record<string, unknown>);
+		// Backend doesn't have a dedicated backtest endpoint yet — return empty
+		return {
+			model_type: data.model_type,
+			total_matches: 0,
+			accuracy: 0,
+			profit_loss: 0,
+			roi: 0,
+			results: []
+		};
 	}
 
 	async getValueBets(fetchFn?: typeof fetch): Promise<Array<{
@@ -48,7 +56,8 @@ class PredictionsApi extends ApiClient {
 		model_type: string;
 		confidence: number;
 	}>> {
-		return this.get('/predictions/value-bets', undefined, fetchFn);
+		// Backend doesn't have a value-bets endpoint yet — return empty
+		return [];
 	}
 }
 

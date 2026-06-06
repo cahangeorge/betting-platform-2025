@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date as date_type
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +7,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.match import Match
 from app.models.prediction import ModelPrediction, PredictionRun
 from app.services.python_bridge import BridgeError, run_penaltyblog
+
+
+def _to_datetime(val: str | None) -> datetime | None:
+    """Convert a date or datetime string to a timezone-aware datetime."""
+    if not val:
+        return None
+    try:
+        dt = datetime.fromisoformat(val)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
+    except ValueError:
+        try:
+            d = date_type.fromisoformat(val)
+            return datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+        except ValueError:
+            return None
 
 PREDICT_MODELS = [
     {"key": "PoissonGoalsModel", "label": "Poisson", "description": "Independent Poisson goals model."},
@@ -29,16 +46,18 @@ MARKET_OUTCOMES = {
 async def fetch_training_matches(db: AsyncSession, league: str, sport: str = "football",
                                  limit: int = 380, date_from: str | None = None,
                                  date_to: str | None = None) -> list[Match]:
+    df = _to_datetime(date_from)
+    dt = _to_datetime(date_to)
     stmt = select(Match).where(
         Match.sport == sport,
         Match.home_score.isnot(None),
         Match.away_score.isnot(None),
         Match.competition.ilike(f"%{league}%"),
     )
-    if date_from:
-        stmt = stmt.where(Match.match_date >= date_from)
-    if date_to:
-        stmt = stmt.where(Match.match_date <= date_to)
+    if df:
+        stmt = stmt.where(Match.match_date >= df)
+    if dt:
+        stmt = stmt.where(Match.match_date <= dt)
     stmt = stmt.order_by(Match.match_date.asc(), Match.created_at.asc()).limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all())
@@ -54,21 +73,24 @@ async def fetch_target_matches(db: AsyncSession, league: str, sport: str = "foot
         result = await db.execute(stmt)
         return list(result.scalars().all())
 
+    df = _to_datetime(date_from)
+    dt = _to_datetime(date_to)
+    today_dt = datetime.now(timezone.utc)
+
     stmt = select(Match).where(Match.sport == sport, Match.competition.ilike(f"%{league}%"))
 
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if target_mode == "future":
-        stmt = stmt.where(Match.home_score.is_(None), Match.match_date >= (date_from or today))
-        if date_to:
-            stmt = stmt.where(Match.match_date <= date_to)
+        stmt = stmt.where(Match.home_score.is_(None), Match.match_date >= (df or today_dt))
+        if dt:
+            stmt = stmt.where(Match.match_date <= dt)
     else:
         stmt = stmt.where(Match.home_score.isnot(None))
-        if date_from:
-            stmt = stmt.where(Match.match_date >= date_from)
-        if date_to:
-            stmt = stmt.where(Match.match_date <= date_to)
+        if df:
+            stmt = stmt.where(Match.match_date >= df)
+        if dt:
+            stmt = stmt.where(Match.match_date <= dt)
         else:
-            stmt = stmt.where(Match.match_date < today)
+            stmt = stmt.where(Match.match_date < today_dt)
 
     stmt = stmt.order_by(Match.match_date.asc()).limit(limit)
     result = await db.execute(stmt)
@@ -105,12 +127,13 @@ async def execute_single_model_run(
     target_limit: int = 50,
     target_mode: str = "future",
     max_goals: int = 10,
+    target_match_ids: list[int] | None = None,
 ) -> dict:
     training = await fetch_training_matches(db, league, sport, training_limit)
     if len(training) < 20:
         raise ValueError(f"Insufficient training data: {len(training)} matches (need >=20)")
 
-    targets = await fetch_target_matches(db, league, sport, target_mode, target_limit)
+    targets = await fetch_target_matches(db, league, sport, target_mode, target_limit, target_match_ids)
     if not targets:
         raise ValueError("No target matches found for this selection.")
 

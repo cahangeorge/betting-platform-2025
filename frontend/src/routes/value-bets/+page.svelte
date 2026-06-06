@@ -5,6 +5,8 @@
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import OddsMovement from '$lib/components/OddsMovement.svelte';
+	import EdgeDistributionChart from '$lib/components/charts/EdgeDistributionChart.svelte';
+	import { fade } from 'svelte/transition';
 
 	let { data }: { data: PageData } = $props();
 
@@ -43,6 +45,23 @@
 			bestEdge: Math.max(...edges),
 			avgOdds: odds.reduce((a, b) => a + b, 0) / odds.length
 		};
+	});
+
+	const edgeDistributionData = $derived(() => {
+		const bets = filteredBets();
+		if (bets.length === 0) return [];
+		const buckets: Record<string, number> = {};
+		for (let i = 0; i <= 20; i += 2) {
+			buckets[`${i}-${i + 2}%`] = 0;
+		}
+		for (const bet of bets) {
+			const bucket = Math.floor(bet.edge / 2) * 2;
+			const key = `${bucket}-${bucket + 2}%`;
+			if (buckets[key] !== undefined) {
+				buckets[key]++;
+			}
+		}
+		return Object.entries(buckets).map(([edge, count]) => ({ edge, count }));
 	});
 
 	function toggleLeague(league: string) {
@@ -84,18 +103,18 @@
 </script>
 
 <svelte:head>
-	<title>Value Bet Feed | Stadium Intel</title>
+	<title>Value Bet Feed | Betfront</title>
 	<meta name="description" content="Edge opportunities detected by your predictive models" />
 </svelte:head>
 
-<div class="space-y-6">
+<div class="space-y-6" transition:fade={{ duration: 200 }}>
 	<!-- Header -->
-	<div class="border-b pb-4" style="border-color: var(--border-subtle);">
+	<div class="border-b border-border pb-4">
 		<div class="flex items-center gap-3 mb-2">
-			<div class="w-1 h-8" style="background: var(--accent-green);"></div>
-			<h1 class="text-2xl font-extrabold tracking-tight font-sport" style="color: var(--text-primary);">VALUE BET FEED</h1>
+			<div class="w-1 h-8 bg-football-green"></div>
+			<h1 class="text-2xl font-extrabold tracking-tight font-sport text-foreground">VALUE BET FEED</h1>
 		</div>
-		<p style="color: var(--text-secondary);">Edge opportunities detected by your predictive models</p>
+		<p class="text-muted-foreground">Edge opportunities detected by your predictive models</p>
 	</div>
 
 	<!-- Filters -->
@@ -104,7 +123,7 @@
 			<div class="flex flex-wrap items-center gap-4">
 				<!-- Min Edge -->
 				<div class="space-y-1">
-					<label class="text-xs font-medium uppercase tracking-wider" style="color: var(--text-secondary);">Min Edge</label>
+					<label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Min Edge</label>
 					<div class="flex items-center gap-2">
 						<input
 							type="range"
@@ -112,25 +131,20 @@
 							max="20"
 							step="0.5"
 							bind:value={minEdge}
-							class="w-32 accent-green"
-							style="accent-color: var(--accent-green);"
+							class="w-32 accent-football-green"
 						/>
-						<span class="text-sm font-mono font-bold" style="color: var(--accent-green); min-width: 3rem;">{minEdge}%</span>
+						<span class="text-sm font-mono font-bold text-football-green min-w-12">{minEdge}%</span>
 					</div>
 				</div>
 
 				<!-- Leagues -->
 				<div class="space-y-1">
-					<label class="text-xs font-medium uppercase tracking-wider" style="color: var(--text-secondary);">Leagues</label>
+					<label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Leagues</label>
 					<div class="flex flex-wrap gap-2">
 						{#each allLeagues as league}
 							<button
 								onclick={() => toggleLeague(league)}
-								class="px-3 py-1 text-xs font-medium border transition-all duration-200"
-								style="border-radius: 9999px; font-family: var(--font-mono);"
-								style:background-color={selectedLeagues.includes(league) ? 'rgba(74, 222, 128, 0.1)' : 'transparent'}
-								style:border-color={selectedLeagues.includes(league) ? 'var(--accent-green)' : 'var(--border-subtle)'}
-								style:color={selectedLeagues.includes(league) ? 'var(--accent-green)' : 'var(--text-secondary)'}
+								class="px-3 py-1 text-xs font-medium border transition-all duration-200  font-mono {selectedLeagues.includes(league) ? 'bg-football-green/10 border-football-green text-football-green' : 'bg-transparent border-border text-muted-foreground'}"
 							>
 								{league}
 							</button>
@@ -140,16 +154,12 @@
 
 				<!-- Market -->
 				<div class="space-y-1">
-					<label class="text-xs font-medium uppercase tracking-wider" style="color: var(--text-secondary);">Market</label>
+					<label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Market</label>
 					<div class="flex gap-1">
 						{#each [['1X2', '1X2'], ['OU', 'O/U'], ['BTTS', 'BTTS']] as [value, label]}
 							<button
 								onclick={() => selectedMarket = value as '1X2' | 'OU' | 'BTTS'}
-								class="px-3 py-1 text-xs font-medium border transition-all duration-200"
-								style="border-radius: 9999px; font-family: var(--font-mono);"
-								style:background-color={selectedMarket === value ? 'rgba(74, 222, 128, 0.1)' : 'transparent'}
-								style:border-color={selectedMarket === value ? 'var(--accent-green)' : 'var(--border-subtle)'}
-								style:color={selectedMarket === value ? 'var(--accent-green)' : 'var(--text-secondary)'}
+								class="px-3 py-1 text-xs font-medium border transition-all duration-200  font-mono {selectedMarket === value ? 'bg-football-green/10 border-football-green text-football-green' : 'bg-transparent border-border text-muted-foreground'}"
 							>
 								{label}
 							</button>
@@ -159,15 +169,14 @@
 
 				<!-- Sort -->
 				<div class="space-y-1">
-					<label class="text-xs font-medium uppercase tracking-wider" style="color: var(--text-secondary);">Sort</label>
+					<label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Sort</label>
 					<select
 						bind:value={sortBy}
-						class="px-3 py-1 text-xs font-medium border"
-						style="background-color: var(--bg-surface); border-color: var(--border-subtle); border-radius: 0; color: var(--text-primary); font-family: var(--font-mono);"
+						class="px-3 py-1 text-xs font-medium border bg-card border-border  text-foreground font-mono"
 					>
-						<option value="edge" style="background: var(--bg-surface);">Edge %</option>
-						<option value="time" style="background: var(--bg-surface);">Kickoff</option>
-						<option value="odds" style="background: var(--bg-surface);">Odds</option>
+						<option value="edge">Edge %</option>
+						<option value="time">Kickoff</option>
+						<option value="odds">Odds</option>
 					</select>
 				</div>
 			</div>
@@ -178,29 +187,39 @@
 	<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
 		<Card>
 			<div class="p-4 text-center">
-				<div class="text-xs uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Total Bets</div>
-				<div class="text-2xl font-bold font-mono" style="color: var(--accent-green);">{stats().total}</div>
+				<div class="text-xs uppercase tracking-wider mb-1 text-muted-foreground">Total Bets</div>
+				<div class="text-2xl font-bold font-mono text-football-green">{stats().total}</div>
 			</div>
 		</Card>
 		<Card>
 			<div class="p-4 text-center">
-				<div class="text-xs uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Avg Edge</div>
-				<div class="text-2xl font-bold font-mono" style="color: var(--accent-green);">{stats().avgEdge.toFixed(1)}%</div>
+				<div class="text-xs uppercase tracking-wider mb-1 text-muted-foreground">Avg Edge</div>
+				<div class="text-2xl font-bold font-mono text-football-green">{stats().avgEdge.toFixed(1)}%</div>
 			</div>
 		</Card>
 		<Card>
 			<div class="p-4 text-center">
-				<div class="text-xs uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Best Edge</div>
-				<div class="text-2xl font-bold font-mono" style="color: var(--accent-green);">{stats().bestEdge.toFixed(1)}%</div>
+				<div class="text-xs uppercase tracking-wider mb-1 text-muted-foreground">Best Edge</div>
+				<div class="text-2xl font-bold font-mono text-football-green">{stats().bestEdge.toFixed(1)}%</div>
 			</div>
 		</Card>
 		<Card>
 			<div class="p-4 text-center">
-				<div class="text-xs uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Avg Odds</div>
-				<div class="text-2xl font-bold font-mono" style="color: var(--accent-blue);">{stats().avgOdds.toFixed(2)}</div>
+				<div class="text-xs uppercase tracking-wider mb-1 text-muted-foreground">Avg Odds</div>
+				<div class="text-2xl font-bold font-mono text-football-blue">{stats().avgOdds.toFixed(2)}</div>
 			</div>
 		</Card>
 	</div>
+
+	<!-- Edge Distribution Chart -->
+	{#if edgeDistributionData().length > 0}
+		<Card>
+			<div class="p-4">
+				<h3 class="text-sm font-medium uppercase tracking-wider mb-4 text-muted-foreground">Edge Distribution</h3>
+				<EdgeDistributionChart data={edgeDistributionData()} />
+			</div>
+		</Card>
+	{/if}
 
 	<!-- Value Bet List -->
 	{#if data.loading}
@@ -210,8 +229,8 @@
 	{:else if filteredBets().length === 0}
 		<Card>
 			<div class="p-12 text-center">
-				<h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">No value bets match your criteria</h3>
-				<p style="color: var(--text-secondary);">Try lowering the minimum edge or selecting more leagues</p>
+				<h3 class="text-lg font-semibold mb-2 text-foreground">No value bets match your criteria</h3>
+				<p class="text-muted-foreground">Try lowering the minimum edge or selecting more leagues</p>
 			</div>
 		</Card>
 	{:else}
@@ -224,65 +243,64 @@
 							<div class="flex-1 min-w-[200px]">
 								<div class="flex items-center gap-2 mb-2">
 									<Badge variant="info">{bet.league}</Badge>
-									<span class="text-xs font-mono" style="color: var(--text-secondary);">{timeUntil(bet.kickoff)}</span>
+									<span class="text-xs font-mono text-muted-foreground">{timeUntil(bet.kickoff)}</span>
 								</div>
-								<div class="font-semibold font-sport" style="color: var(--text-primary);">
-									<span style="color: var(--accent-blue);">{bet.home_team}</span>
-									<span class="mx-2" style="color: var(--text-secondary);">vs</span>
-									<span style="color: var(--accent-blue);">{bet.away_team}</span>
+								<div class="font-semibold font-sport text-foreground">
+									<span class="text-football-blue">{bet.home_team}</span>
+									<span class="mx-2 text-muted-foreground">vs</span>
+									<span class="text-football-blue">{bet.away_team}</span>
 								</div>
 							</div>
 
 							<!-- Selection -->
 							<div class="text-center min-w-[120px]">
-								<div class="text-xs uppercase tracking-wider mb-1" style="color: var(--text-secondary);">{bet.market}</div>
-								<div class="font-bold font-mono text-lg" style="color: var(--accent-green);">{bet.selection}</div>
+								<div class="text-xs uppercase tracking-wider mb-1 text-muted-foreground">{bet.market}</div>
+								<div class="font-bold font-mono text-lg text-football-green">{bet.selection}</div>
 							</div>
 
 							<!-- Probabilities -->
 							<div class="text-center min-w-[100px]">
-								<div class="text-xs uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Model</div>
-								<div class="font-mono font-bold" style="color: var(--text-primary);">{(bet.model_prob * 100).toFixed(1)}%</div>
-								<div class="w-full h-1 mt-1" style="background: var(--bg-elevated);">
+								<div class="text-xs uppercase tracking-wider mb-1 text-muted-foreground">Model</div>
+								<div class="font-mono font-bold text-foreground">{(bet.model_prob * 100).toFixed(1)}%</div>
+								<div class="w-full h-1 mt-1 bg-muted">
 									<div
 										class="h-full transition-all duration-500"
-										style="width: {bet.model_prob * 100}%; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));"
+										style="width: {bet.model_prob * 100}%; background: linear-gradient(90deg, oklch(0.72 0.19 155), oklch(0.65 0.15 250));"
 									></div>
 								</div>
 							</div>
 
 							<!-- Odds -->
 							<div class="text-center min-w-[80px]">
-								<div class="text-xs uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Odds</div>
-								<div class="font-mono font-bold text-lg" style="color: var(--accent-blue);">{bet.odds.toFixed(2)}</div>
-								<div class="text-xs font-mono" style="color: var(--text-muted);">
+								<div class="text-xs uppercase tracking-wider mb-1 text-muted-foreground">Odds</div>
+								<div class="font-mono font-bold text-lg text-football-blue">{bet.odds.toFixed(2)}</div>
+								<div class="text-xs font-mono text-muted-foreground/60">
 									Implied: {(100 / bet.odds).toFixed(1)}%
 								</div>
 							</div>
 
 							<!-- Edge -->
 							<div class="min-w-[100px]">
-								<div class="text-xs uppercase tracking-wider mb-1" style="color: var(--text-secondary);">Edge</div>
+								<div class="text-xs uppercase tracking-wider mb-1 text-muted-foreground">Edge</div>
 								<div
-									class="font-mono font-bold text-lg"
-									style="color: {bet.edge > 0 ? 'var(--accent-green)' : 'var(--danger)'}"
+									class="font-mono font-bold text-lg {bet.edge > 0 ? 'text-football-green' : 'text-destructive'}"
 								>
 									{formatEdge(bet.edge)}
 								</div>
-								<div class="w-full h-2 mt-1" style="background: var(--bg-elevated);">
+								<div class="w-full h-2 mt-1 bg-muted">
 									<div
-										class="h-full transition-all duration-500"
-										style="width: {Math.min(Math.abs(bet.edge) * 3, 100)}%; background: {bet.edge > 0 ? 'var(--accent-green)' : 'var(--danger)'}"
+										class="h-full transition-all duration-500 {bet.edge > 0 ? 'bg-football-green' : 'bg-destructive'}"
+										style="width: {Math.min(Math.abs(bet.edge) * 3, 100)}%;"
 									></div>
 								</div>
 							</div>
 
 							<!-- EV & Kelly -->
 							<div class="text-right min-w-[120px]">
-								<div class="text-xs font-mono mb-1" style="color: var(--accent-green);">
+								<div class="text-xs font-mono mb-1 text-football-green">
 									EV {formatEV(bet.edge, bet.odds)}
 								</div>
-								<div class="text-xs font-mono mb-2" style="color: var(--text-muted);">
+								<div class="text-xs font-mono mb-2 text-muted-foreground/60">
 									Kelly: £{kellyStake(bet.edge, bet.odds).toFixed(0)}
 								</div>
 								<Button variant="primary" class="w-full text-xs">ADD TO SLIP</Button>

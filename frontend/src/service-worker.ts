@@ -24,14 +24,13 @@ sw.addEventListener('install', (event) => {
 	event.waitUntil(addFilesToCache());
 });
 
-// Activate and clean old caches
+// Activate and clean old caches + take control immediately
 sw.addEventListener('activate', (event) => {
 	async function deleteOldCaches() {
-		for (const key of await caches.keys()) {
-			if (key !== CACHE) {
-				await caches.delete(key);
-			}
-		}
+		const keys = await caches.keys();
+		await Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)));
+		// Take control of all open tabs immediately
+		await sw.clients.claim();
 	}
 	event.waitUntil(deleteOldCaches());
 });

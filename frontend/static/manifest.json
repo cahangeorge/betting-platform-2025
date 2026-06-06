@@ -1,12 +1,15 @@
 {
-	"name": "betfront - Betting Intelligence Platform",
-	"short_name": "betfront",
-	"description": "AI-powered football betting analytics platform with real-time odds, predictions, and portfolio tracking",
+	"name": "Betfront - Sports Betting Intelligence",
+	"short_name": "Betfront",
+	"description": "AI-powered football betting analytics with real-time odds, predictions, and portfolio tracking",
 	"start_url": "/",
 	"display": "standalone",
 	"background_color": "#020617",
-	"theme_color": "#0f172a",
+	"theme_color": "#060B14",
 	"orientation": "portrait-primary",
+	"categories": ["sports", "utilities"],
+	"lang": "en",
+	"scope": "/",
 	"icons": [
 		{
 			"src": "/icons/icon-192.svg",
@@ -20,8 +23,5 @@
 			"type": "image/svg+xml",
 			"purpose": "any maskable"
 		}
-	],
-	"categories": ["sports", "utilities"],
-	"lang": "en",
-	"scope": "/"
+	]
 }

@@ -9,6 +9,7 @@
 	import Select from './ui/Select.svelte';
 	import Badge from './ui/Badge.svelte';
 	import Loading from './Loading.svelte';
+	import EquityCurveChart from './charts/EquityCurveChart.svelte';
 
 	let bankrolls = $state<Bankroll[]>([]);
 	let accounts = $state<BookmakerAccount[]>([]);
@@ -121,30 +122,47 @@
 	const bankrollOptions = $derived(
 		bankrolls.map((b) => ({ value: String(b.id), label: b.name }))
 	);
+
+	const equityCurveData = $derived(
+		ledger.map((entry) => ({
+			date: entry.created_at,
+			bankroll: entry.balance_after
+		}))
+	);
 </script>
 
 <div class="space-y-6">
 	{#if loading}
 		<Loading message="Loading account data..." />
 	{:else if error}
-		<div class="p-4 border text-sm" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 0;">{error}</div>
+		<div class="p-4  text-sm bg-destructive/10 border border-destructive/30 text-destructive">{error}</div>
 		<Button onclick={loadData}>Retry</Button>
 	{:else}
 		<Tabs bind:activeTab {tabs}>
-			{#if activeTab === 'bankrolls'}
+				{#if activeTab === 'bankrolls'}
 				<div class="space-y-4">
+					<!-- Equity Curve Chart -->
+					{#if equityCurveData.length > 1}
+						<Card>
+							<div class="p-4">
+								<h4 class="font-medium text-foreground mb-4">Equity Curve</h4>
+								<EquityCurveChart data={equityCurveData} />
+							</div>
+						</Card>
+					{/if}
+
 					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 						{#each bankrolls as br (br.id)}
 							<Card>
 								<div class="space-y-2">
 									<div class="flex items-center justify-between">
-										<h4 class="font-medium" style="color: var(--text-primary);">{br.name}</h4>
+										<h4 class="font-medium text-foreground">{br.name}</h4>
 										<Badge variant={br.type === 'real' ? 'info' : 'default'}>{br.type}</Badge>
 									</div>
-									<p class="text-2xl font-bold font-mono" style="color: var(--accent-green);">
+									<p class="text-2xl font-bold font-mono text-football-green">
 										{br.currency} {br.balance.toFixed(2)}
 									</p>
-									<p class="text-xs" style="color: var(--text-muted);">
+									<p class="text-xs text-muted-foreground">
 										Initial: {br.currency} {br.initial_balance.toFixed(2)}
 									</p>
 								</div>
@@ -154,7 +172,7 @@
 						{#if showNewBankroll}
 							<Card>
 								<form onsubmit={(e) => { e.preventDefault(); createBankroll(); }} class="space-y-3">
-									<h4 class="font-medium" style="color: var(--text-primary);">New Bankroll</h4>
+									<h4 class="font-medium text-foreground">New Bankroll</h4>
 									<Input label="Name" bind:value={newBankrollName} placeholder="My Bankroll" />
 									<Select
 										label="Type"
@@ -185,7 +203,7 @@
 				<div class="space-y-4">
 					<div class="overflow-x-auto">
 						<table class="w-full text-sm">
-							<thead class="text-xs uppercase" style="background-color: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: var(--font-body);">
+							<thead class="text-xs uppercase bg-muted border-b border-border text-muted-foreground font-sans">
 								<tr>
 									<th class="px-4 py-3 text-left">Bookmaker</th>
 									<th class="px-4 py-3 text-left">Account</th>
@@ -195,15 +213,15 @@
 							</thead>
 							<tbody>
 								{#each accounts as acct (acct.id)}
-									<tr class="transition-colors duration-200" style="border-bottom: 1px solid var(--border-subtle);">
-										<td class="px-4 py-3 font-medium" style="color: var(--text-primary);">{acct.bookmaker_name}</td>
-										<td class="px-4 py-3" style="color: var(--text-secondary);">{acct.account_name}</td>
-										<td class="px-4 py-3 font-mono" style="color: var(--accent-green);">{acct.balance.toFixed(2)}</td>
-										<td class="px-4 py-3 font-mono" style="color: var(--text-muted);">{acct.currency}</td>
+									<tr class="transition-colors duration-200 border-b border-border hover:bg-muted">
+										<td class="px-4 py-3 font-medium text-foreground">{acct.bookmaker_name}</td>
+										<td class="px-4 py-3 text-muted-foreground">{acct.account_name}</td>
+										<td class="px-4 py-3 font-mono text-football-green">{acct.balance.toFixed(2)}</td>
+										<td class="px-4 py-3 font-mono text-muted-foreground">{acct.currency}</td>
 									</tr>
 								{:else}
 									<tr>
-										<td colspan="4" class="px-4 py-8 text-center" style="color: var(--text-muted);">No accounts linked yet</td>
+										<td colspan="4" class="px-4 py-8 text-center text-muted-foreground">No accounts linked yet</td>
 									</tr>
 								{/each}
 							</tbody>
@@ -239,7 +257,7 @@
 			{:else if activeTab === 'ledger'}
 				<div class="overflow-x-auto">
 					<table class="w-full text-sm">
-						<thead class="text-xs uppercase" style="background-color: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: var(--font-body);">
+						<thead class="text-xs uppercase bg-muted border-b border-border text-muted-foreground font-sans">
 							<tr>
 								{#each ledgerCols as col (col.key)}
 									<th class="px-4 py-3 text-left">{col.label}</th>
@@ -248,22 +266,22 @@
 						</thead>
 						<tbody>
 							{#each ledgerRows as row (String(row.created_at) + row.entry_type + row.amount)}
-								<tr class="transition-colors duration-200" style="border-bottom: 1px solid var(--border-subtle);">
-									<td class="px-4 py-3" style="color: var(--text-muted);">{row.created_at}</td>
+								<tr class="transition-colors duration-200 border-b border-border hover:bg-muted">
+									<td class="px-4 py-3 text-muted-foreground">{row.created_at}</td>
 									<td class="px-4 py-3">
 										<Badge variant={row.entry_type.includes('won') || row.entry_type === 'deposit' ? 'success' : row.entry_type.includes('lost') || row.entry_type === 'withdrawal' ? 'danger' : 'default'}>
 											{row.entry_type}
 										</Badge>
 									</td>
-									<td class="px-4 py-3" style="color: var(--text-secondary);">{row.description}</td>
-									<td class="px-4 py-3 font-mono" style={row.amount.startsWith('+') ? 'color: var(--accent-green);' : 'color: var(--danger);'}>
+									<td class="px-4 py-3 text-muted-foreground">{row.description}</td>
+									<td class="px-4 py-3 font-mono {row.amount.startsWith('+') ? 'text-football-green' : 'text-destructive'}">
 										{row.amount}
 									</td>
-									<td class="px-4 py-3 font-mono" style="color: var(--text-secondary);">{row.balance_after}</td>
+									<td class="px-4 py-3 font-mono text-muted-foreground">{row.balance_after}</td>
 								</tr>
 							{:else}
 								<tr>
-									<td colspan={ledgerCols.length} class="px-4 py-8 text-center" style="color: var(--text-muted);">No ledger entries yet</td>
+									<td colspan={ledgerCols.length} class="px-4 py-8 text-center text-muted-foreground">No ledger entries yet</td>
 								</tr>
 							{/each}
 						</tbody>
@@ -273,9 +291,3 @@
 		</Tabs>
 	{/if}
 </div>
-
-<style>
-	tbody tr:hover {
-		background-color: var(--bg-elevated);
-	}
-</style>

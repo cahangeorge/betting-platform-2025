@@ -9,19 +9,20 @@ class MatchesApi extends ApiClient {
 		if (filter?.date_from) params.set('date_from', filter.date_from);
 		if (filter?.date_to) params.set('date_to', filter.date_to);
 		const qs = params.toString();
-		return this.get<Match[]>(`/matches${qs ? `?${qs}` : ''}`);
+		return this.get<Match[]>(`/api/v1/matches${qs ? `?${qs}` : ''}`);
 	}
 
 	async getMatch(id: number): Promise<Match> {
-		return this.get<Match>(`/matches/${id}`);
+		return this.get<Match>(`/api/v1/matches/${id}`);
 	}
 
 	async getOdds(matchId: number): Promise<Match['odds']> {
-		return this.get<Match['odds']>(`/matches/${matchId}/odds`);
+		return this.get<Match['odds']>(`/api/v1/matches/${matchId}/odds`);
 	}
 
 	async getLeagues(): Promise<string[]> {
-		return this.get<string[]>('/matches/leagues');
+		// Backend doesn't have a dedicated leagues endpoint yet
+		return [];
 	}
 }
 

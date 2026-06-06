@@ -48,7 +48,7 @@
 
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
-		<h2 class="text-xl font-semibold" style="color: var(--text-primary);">Scheduled Jobs</h2>
+		<h2 class="text-xl font-semibold text-foreground">Scheduled Jobs</h2>
 		<Button onclick={loadJobs} variant="ghost" size="sm">
 			Refresh
 		</Button>
@@ -57,10 +57,10 @@
 	{#if loading}
 		<Loading message="Loading scheduled jobs..." />
 	{:else if error}
-		<div class="p-4 border text-sm" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 0;">{error}</div>
+		<div class="p-4  text-sm bg-destructive/10 border border-destructive/30 text-destructive">{error}</div>
 		<Button onclick={loadJobs}>Retry</Button>
 	{:else if jobs.length === 0}
-		<div class="text-center py-12" style="color: var(--text-muted);">
+		<div class="text-center py-12 text-muted-foreground">
 			<p class="text-lg mb-2">No scheduled jobs</p>
 			<p class="text-sm">Scheduled jobs will appear here once configured</p>
 		</div>
@@ -71,16 +71,16 @@
 					<div class="flex items-center justify-between">
 						<div class="flex-1">
 							<div class="flex items-center space-x-3">
-								<h4 class="font-medium" style="color: var(--text-primary);">{job.name}</h4>
+								<h4 class="font-medium text-foreground">{job.name}</h4>
 								<Badge variant={job.is_enabled ? 'success' : 'default'}>
 									{job.is_enabled ? 'Enabled' : 'Disabled'}
 								</Badge>
 							</div>
-							<div class="mt-1 flex items-center space-x-4 text-xs" style="color: var(--text-muted);">
+							<div class="mt-1 flex items-center space-x-4 text-xs text-muted-foreground">
 								<span>Task: {job.task_type}</span>
-								<span>Cron: <code class="font-mono" style="color: var(--accent-green);">{job.cron_expression}</code></span>
+								<span>Cron: <code class="font-mono text-football-green">{job.cron_expression}</code></span>
 							</div>
-							<div class="mt-1 flex items-center space-x-4 text-xs" style="color: var(--text-muted); opacity: 0.7;">
+							<div class="mt-1 flex items-center space-x-4 text-xs text-muted-foreground opacity-70">
 								<span>Last run: {job.last_run ? new Date(job.last_run).toLocaleString() : 'Never'}</span>
 								<span>Next run: {job.next_run ? new Date(job.next_run).toLocaleString() : 'N/A'}</span>
 							</div>

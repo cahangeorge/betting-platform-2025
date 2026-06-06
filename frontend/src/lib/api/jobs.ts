@@ -3,27 +3,29 @@ import type { ScheduledJob, ScheduledJobCreateRequest } from '$lib/types';
 
 class JobsApi extends ApiClient {
 	async getScheduledJobs(): Promise<ScheduledJob[]> {
-		return this.get<ScheduledJob[]>('/scheduled-jobs');
+		return this.get<ScheduledJob[]>('/api/v1/jobs');
 	}
 
 	async getScheduledJob(id: number): Promise<ScheduledJob> {
-		return this.get<ScheduledJob>(`/scheduled-jobs/${id}`);
+		return this.get<ScheduledJob>(`/api/v1/jobs/${id}`);
 	}
 
 	async createScheduledJob(data: ScheduledJobCreateRequest): Promise<ScheduledJob> {
-		return this.post<ScheduledJob>('/scheduled-jobs', data as unknown as Record<string, unknown>);
+		return this.post<ScheduledJob>('/api/v1/jobs', data as unknown as Record<string, unknown>);
 	}
 
 	async updateScheduledJob(id: number, data: Partial<ScheduledJobCreateRequest>): Promise<ScheduledJob> {
-		return this.patch<ScheduledJob>(`/scheduled-jobs/${id}`, data as unknown as Record<string, unknown>);
+		// Backend only has toggle — use toggle
+		return this.patch<ScheduledJob>(`/api/v1/jobs/${id}/toggle`, data as unknown as Record<string, unknown>);
 	}
 
 	async deleteScheduledJob(id: number): Promise<void> {
-		return this.del<void>(`/scheduled-jobs/${id}`);
+		// Backend doesn't have delete — no-op
+		return undefined as void;
 	}
 
 	async toggleJob(id: number): Promise<ScheduledJob> {
-		return this.post<ScheduledJob>(`/scheduled-jobs/${id}/toggle`);
+		return this.post<ScheduledJob>(`/api/v1/jobs/${id}/toggle`);
 	}
 }
 

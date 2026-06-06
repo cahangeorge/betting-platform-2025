@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.config import get_settings
 from app.database import get_db
 from app.models.user import User
 from app.schemas.auth import LoginRequest, SignupRequest, TokenResponse, UserResponse
@@ -14,6 +15,7 @@ from app.services.auth import (
 )
 
 router = APIRouter()
+settings = get_settings()
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
@@ -38,7 +40,7 @@ async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db), respon
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,
+        secure=settings.cookie_secure,
         samesite="lax",
         max_age=1800,
         path="/",
@@ -47,7 +49,7 @@ async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db), respon
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,
+        secure=settings.cookie_secure,
         samesite="lax",
         max_age=604800,
         path="/",
@@ -70,7 +72,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db), response
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,
+        secure=settings.cookie_secure,
         samesite="lax",
         max_age=1800,
         path="/",
@@ -79,7 +81,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db), response
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,
+        secure=settings.cookie_secure,
         samesite="lax",
         max_age=604800,
         path="/",

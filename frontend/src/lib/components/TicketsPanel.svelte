@@ -10,6 +10,7 @@
 	import Input from './ui/Input.svelte';
 	import Badge from './ui/Badge.svelte';
 	import Loading from './Loading.svelte';
+	import Separator from './ui/separator';
 
 	let tickets = $state<Ticket[]>([]);
 	let matches = $state<Match[]>([]);
@@ -112,87 +113,87 @@
 	{#if loading && tickets.length === 0}
 		<Loading message="Loading tickets..." />
 	{:else if error}
-		<div class="p-4 border text-sm" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 0;">{error}</div>
+		<div class="p-4  text-sm bg-destructive/10 border border-destructive/30 text-destructive">{error}</div>
 		<Button onclick={loadTickets}>Retry</Button>
 	{:else}
 		<!-- Stats row -->
 		<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
 			<Card>
-				<p class="text-xs uppercase tracking-wider" style="color: var(--text-muted);">Total Bets</p>
-				<p class="text-2xl font-bold font-mono" style="color: var(--text-primary);">{stats.total}</p>
+				<p class="text-xs uppercase tracking-wider text-muted-foreground">Total Bets</p>
+				<p class="text-2xl font-bold font-mono text-foreground">{stats.total}</p>
 			</Card>
 			<Card>
-				<p class="text-xs uppercase tracking-wider" style="color: var(--text-muted);">Won</p>
-				<p class="text-2xl font-bold font-mono" style="color: var(--accent-green);">{stats.won}</p>
+				<p class="text-xs uppercase tracking-wider text-muted-foreground">Won</p>
+				<p class="text-2xl font-bold font-mono text-football-green">{stats.won}</p>
 			</Card>
 			<Card>
-				<p class="text-xs uppercase tracking-wider" style="color: var(--text-muted);">Lost</p>
-				<p class="text-2xl font-bold font-mono" style="color: var(--danger);">{stats.lost}</p>
+				<p class="text-xs uppercase tracking-wider text-muted-foreground">Lost</p>
+				<p class="text-2xl font-bold font-mono text-destructive">{stats.lost}</p>
 			</Card>
 			<Card>
-				<p class="text-xs uppercase tracking-wider" style="color: var(--text-muted);">P/L</p>
-				<p class="text-2xl font-bold font-mono" style="color: {stats.profit_loss >= 0 ? 'var(--accent-green)' : 'var(--danger)'};">{stats.profit_loss > 0 ? '+' : ''}{stats.profit_loss.toFixed(2)}</p>
+				<p class="text-xs uppercase tracking-wider text-muted-foreground">P/L</p>
+				<p class="text-2xl font-bold font-mono {stats.profit_loss >= 0 ? 'text-football-green' : 'text-destructive'}">{stats.profit_loss > 0 ? '+' : ''}{stats.profit_loss.toFixed(2)}</p>
 			</Card>
 		</div>
 
 		<Tabs bind:activeTab {tabs}>
 			{#if activeTab === 'active'}
 				{#if activeTickets.length === 0}
-					<div class="text-center py-12" style="color: var(--text-muted);">
+					<div class="text-center py-12 text-muted-foreground">
 						<p>No active tickets</p>
 						<Button variant="secondary" class="mt-4" onclick={() => (activeTab = 'place')}>Place a Bet</Button>
 					</div>
 				{:else}
 					<div class="space-y-4">
 						{#each activeTickets as ticket (ticket.id)}
-							<div class="card p-4" style="border-left: 3px solid var(--accent-green);">
+							<Card class="p-4 border-l-3 border-l-football-green">
 								<div class="flex items-center justify-between mb-3">
 									<div class="flex items-center space-x-3">
-										<span class="text-sm font-mono" style="color: var(--text-muted);">#{ticket.reference}</span>
+										<span class="text-sm font-mono text-muted-foreground">#{ticket.reference}</span>
 										<Badge variant="info">{ticket.type}</Badge>
 										<Badge variant="warning">open</Badge>
 									</div>
-									<span class="text-xs" style="color: var(--text-muted);">{new Date(ticket.created_at).toLocaleString()}</span>
+									<span class="text-xs text-muted-foreground">{new Date(ticket.created_at).toLocaleString()}</span>
 								</div>
 
 								<div class="grid grid-cols-3 gap-4 mb-3">
 									<div>
-										<p class="text-xs" style="color: var(--text-muted);">Stake</p>
-										<p class="text-sm font-medium font-mono" style="color: var(--text-primary);">{ticket.stake.toFixed(2)}</p>
+										<p class="text-xs text-muted-foreground">Stake</p>
+										<p class="text-sm font-medium font-mono text-foreground">{ticket.stake.toFixed(2)}</p>
 									</div>
 									<div>
-										<p class="text-xs" style="color: var(--text-muted);">Odds</p>
-										<p class="text-sm font-medium font-mono" style="color: var(--accent-green);">x{ticket.total_odds.toFixed(2)}</p>
+										<p class="text-xs text-muted-foreground">Odds</p>
+										<p class="text-sm font-medium font-mono text-football-green">x{ticket.total_odds.toFixed(2)}</p>
 									</div>
 									<div>
-										<p class="text-xs" style="color: var(--text-muted);">Potential Return</p>
-										<p class="text-sm font-medium font-mono" style="color: var(--text-primary);">{ticket.potential_return.toFixed(2)}</p>
+										<p class="text-xs text-muted-foreground">Potential Return</p>
+										<p class="text-sm font-medium font-mono text-foreground">{ticket.potential_return.toFixed(2)}</p>
 									</div>
 								</div>
 
 								<div class="space-y-1">
 									{#each ticket.legs as leg (leg.id)}
-										<div class="flex items-center space-x-2 text-xs" style="color: var(--text-muted);">
+										<div class="flex items-center space-x-2 text-xs text-muted-foreground">
 											<span>{leg.match?.home_team ?? 'Match'} vs {leg.match?.away_team ?? '?'}</span>
-											<span style="color: var(--border-subtle);">|</span>
+											<span class="text-border">|</span>
 											<span>{leg.market}</span>
-											<span style="color: var(--border-subtle);">|</span>
+											<span class="text-border">|</span>
 											<span>{leg.selection} @ {leg.odds.toFixed(2)}</span>
 										</div>
 									{/each}
 								</div>
-							</div>
+							</Card>
 						{/each}
 					</div>
 				{/if}
 
 			{:else if activeTab === 'history'}
 				{#if tickets.length === 0}
-					<p class="text-center py-12" style="color: var(--text-muted);">No ticket history</p>
+					<p class="text-center py-12 text-muted-foreground">No ticket history</p>
 				{:else}
 					<div class="overflow-x-auto">
 						<table class="w-full text-sm">
-							<thead class="text-xs uppercase" style="background-color: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: var(--font-body);">
+							<thead class="text-xs uppercase bg-muted border-b border-border text-muted-foreground font-sans">
 								<tr>
 									<th class="px-4 py-3 text-left">Reference</th>
 									<th class="px-4 py-3 text-left">Type</th>
@@ -205,8 +206,8 @@
 							</thead>
 							<tbody>
 								{#each tickets as ticket (ticket.id)}
-									<tr class="transition-colors duration-200" style="border-bottom: 1px solid var(--border-subtle);">
-										<td class="px-4 py-3 font-mono" style="color: var(--text-muted);">#{ticket.reference}</td>
+									<tr class="transition-colors duration-200 border-b border-border hover:bg-muted">
+										<td class="px-4 py-3 font-mono text-muted-foreground">#{ticket.reference}</td>
 										<td class="px-4 py-3">
 											<Badge>{ticket.type}</Badge>
 										</td>
@@ -214,9 +215,9 @@
 											<Badge variant={statusBadge[ticket.status] || 'default'}>{ticket.status}</Badge>
 										</td>
 										<td class="px-4 py-3 text-right font-mono">{ticket.stake.toFixed(2)}</td>
-										<td class="px-4 py-3 text-right font-mono" style="color: var(--accent-green);">x{ticket.total_odds.toFixed(2)}</td>
-										<td class="px-4 py-3 text-right font-mono" style="color: {ticket.actual_return !== null && ticket.actual_return > 0 ? 'var(--accent-green)' : ticket.actual_return !== null ? 'var(--danger)' : 'var(--text-muted)'};">{ticket.actual_return !== null ? ticket.actual_return.toFixed(2) : '-'}</td>
-										<td class="px-4 py-3 text-xs" style="color: var(--text-muted);">{new Date(ticket.created_at).toLocaleDateString()}</td>
+										<td class="px-4 py-3 text-right font-mono text-football-green">x{ticket.total_odds.toFixed(2)}</td>
+										<td class="px-4 py-3 text-right font-mono {ticket.actual_return !== null && ticket.actual_return > 0 ? 'text-football-green' : ticket.actual_return !== null ? 'text-destructive' : 'text-muted-foreground'}">{ticket.actual_return !== null ? ticket.actual_return.toFixed(2) : '-'}</td>
+										<td class="px-4 py-3 text-xs text-muted-foreground">{new Date(ticket.created_at).toLocaleDateString()}</td>
 									</tr>
 								{/each}
 							</tbody>
@@ -225,11 +226,11 @@
 				{/if}
 
 			{:else if activeTab === 'place'}
-				<div class="card p-4" style="border-top: 2px solid var(--accent-green);">
-					<h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Place Bet</h3>
+				<Card class="p-4 border-t-football-green">
+					<h3 class="text-lg font-semibold mb-4 text-foreground">Place Bet</h3>
 					<form onsubmit={(e) => { e.preventDefault(); placeBet(); }} class="space-y-4">
 						{#if betError}
-							<div class="p-3 text-sm border" style="background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: var(--danger); border-radius: 0;">{betError}</div>
+							<div class="p-3 text-sm  bg-destructive/10 border border-destructive/30 text-destructive">{betError}</div>
 						{/if}
 
 						<Select
@@ -265,16 +266,16 @@
 							<Input label="Stake" type="number" step="0.50" bind:value={betStake} />
 						</div>
 
-						<div class="p-3" style="background-color: var(--bg-deep); border: 1px solid var(--border-subtle);">
+						<div class="p-3  bg-background border border-border">
 							<div class="flex justify-between text-sm">
-								<span style="color: var(--text-muted);">Potential Return:</span>
-								<span class="font-mono font-medium" style="color: var(--accent-green);">
+								<span class="text-muted-foreground">Potential Return:</span>
+								<span class="font-mono font-medium text-football-green">
 									{(parseFloat(betStake || '0') * parseFloat(betOdds || '1')).toFixed(2)}
 								</span>
 							</div>
 							<div class="flex justify-between text-sm mt-1">
-								<span style="color: var(--text-muted);">Profit:</span>
-								<span class="font-mono" style="color: var(--accent-green);">
+								<span class="text-muted-foreground">Profit:</span>
+								<span class="font-mono text-football-green">
 									{(parseFloat(betStake || '0') * parseFloat(betOdds || '1') - parseFloat(betStake || '0')).toFixed(2)}
 								</span>
 							</div>
@@ -284,14 +285,8 @@
 							{betSubmitting ? 'Placing...' : 'Place Bet'}
 						</Button>
 					</form>
-				</div>
+				</Card>
 			{/if}
 		</Tabs>
 	{/if}
 </div>
-
-<style>
-	tbody tr:hover {
-		background-color: var(--bg-elevated);
-	}
-</style>

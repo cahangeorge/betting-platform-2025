@@ -1,6 +1,9 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
+	import ShadcnSelect from './select/select.svelte';
+
 	let {
-		value,
+		value = $bindable(),
 		label,
 		options,
 		placeholder = 'Select...',
@@ -18,18 +21,14 @@
 
 <div class="space-y-1.5">
 	{#if label}
-		<label for={name} class="label">{label}</label>
+		<label for={name} class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+			{label}
+		</label>
 	{/if}
-	<select
-		{name}
-		{disabled}
-		bind:value
-		class="input appearance-none cursor-pointer"
-		style="background-image: url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 20 20%27%3e%3cpath stroke=%27%2364748B%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%271.5%27 d=%27M6 8l4 4 4-4%27/%3e%3c/svg%3e'); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem;"
-	>
+	<ShadcnSelect {name} {disabled} bind:value>
 		<option value="" disabled>{placeholder}</option>
 		{#each options as opt (opt.value)}
 			<option value={opt.value}>{opt.label}</option>
 		{/each}
-	</select>
+	</ShadcnSelect>
 </div>

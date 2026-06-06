@@ -16,16 +16,10 @@
 
 <div class="flex flex-col items-center justify-center space-y-3">
 	<div class="relative {sizeClasses[size]}">
-		<div
-			class="absolute inset-0 border-2 animate-spin-ring"
-			style="border-color: var(--border-subtle); border-top-color: var(--accent-green); border-radius: 4px;"
-		></div>
-		<div
-			class="absolute inset-1 border-2 animate-spin-ring"
-			style="border-color: transparent; border-top-color: var(--accent-blue); animation-direction: reverse; animation-duration: 0.8s; border-radius: 4px;"
-		></div>
+		<div class="absolute inset-0 border-2  border-muted border-t-football-green animate-spin"></div>
+		<div class="absolute inset-1 border-2  border-transparent border-t-football-blue animate-spin" style="animation-direction: reverse; animation-duration: 0.8s;"></div>
 	</div>
 	{#if message}
-		<p class="text-sm font-mono" style="color: var(--text-secondary);">{message}</p>
+		<p class="text-sm font-mono text-muted-foreground">{message}</p>
 	{/if}
 </div>

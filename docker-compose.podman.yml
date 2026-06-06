@@ -40,7 +40,8 @@ services:
     environment:
       BET_DATABASE_URL: postgresql+asyncpg://betuser:${POSTGRES_PASSWORD:-betpassword_dev}@postgres:5432/betting_platform
       BET_JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
-      BET_CORS_ORIGINS: http://localhost:5174,http://localhost:3000,http://localhost:8001
+      BET_CORS_ORIGINS: "*"
+      BET_COOKIE_SECURE: "true"
       BET_DEBUG: "false"
     ports:
       - "127.0.0.1:8001:8000"
@@ -59,12 +60,27 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        PUBLIC_API_URL: ""
     environment:
-      PUBLIC_API_URL: http://localhost:8001
-      ORIGIN: http://localhost:5174
+      PUBLIC_API_URL: ""
+      BET_API_URL: "http://backend:8000"
     ports:
       - "127.0.0.1:5174:3000"
     depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - betnet
+
+  nginx:
+    image: docker.io/nginx:1.27-alpine
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
       - backend
     restart: unless-stopped
     networks:

@@ -3,24 +3,24 @@ import type { Ticket, PlaceBetRequest, SettleRequest } from '$lib/types';
 
 class TicketsApi extends ApiClient {
 	async getTickets(status?: string): Promise<Ticket[]> {
-		const params = status ? `?status=${status}` : '';
-		return this.get<Ticket[]>(`/tickets${params}`);
+		return this.get<Ticket[]>('/api/v1/tickets');
 	}
 
 	async getTicket(id: number): Promise<Ticket> {
-		return this.get<Ticket>(`/tickets/${id}`);
+		return this.get<Ticket>(`/api/v1/tickets/${id}`);
 	}
 
 	async placeBet(data: PlaceBetRequest): Promise<Ticket> {
-		return this.post<Ticket>('/tickets', data as unknown as Record<string, unknown>);
+		return this.post<Ticket>('/api/v1/tickets', data as unknown as Record<string, unknown>);
 	}
 
 	async settleTicket(data: SettleRequest): Promise<Ticket> {
-		return this.post<Ticket>('/tickets/settle', data as unknown as Record<string, unknown>);
+		return this.post<Ticket>(`/api/v1/tickets/${data.ticket_id}/settle`, { outcome: data.outcome, return_amount: data.return_amount } as unknown as Record<string, unknown>);
 	}
 
 	async getStats(): Promise<{ total: number; won: number; lost: number; profit_loss: number }> {
-		return this.get('/tickets/stats');
+		// Backend doesn't have a stats endpoint yet — return empty
+		return { total: 0, won: 0, lost: 0, profit_loss: 0 };
 	}
 }
 

@@ -12,6 +12,7 @@ from app.models.ticket import Ticket, TicketBatch, TicketLeg, BetPlacement, Sett
 from app.models.scrape import ScrapeJob, ScrapedDataset
 from app.models.bankroll import Bankroll, BookmakerAccount, LedgerEntry
 from app.models.job import ScheduledJob
+from app.models.strategy import Strategy
 from app.models.todo import Todo
 
 __all__ = [
@@ -38,5 +39,6 @@ __all__ = [
     "BookmakerAccount",
     "LedgerEntry",
     "ScheduledJob",
+    "Strategy",
     "Todo",
 ]

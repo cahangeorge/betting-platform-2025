@@ -11,6 +11,8 @@
 		Plus,
 		Eye
 	} from 'lucide-svelte';
+	import { cn } from '$lib/utils';
+	import { Separator } from './ui/separator';
 
 	interface CommandItem {
 		id: string;
@@ -125,31 +127,23 @@
 {#if open}
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 	<div
-		class="fixed inset-0 z-[60] flex items-start justify-center pt-[15vh]"
-		style="background: rgba(6, 11, 20, 0.95);"
+		class="fixed inset-0 z-[60] flex items-start justify-center pt-[15vh] bg-background/95 backdrop-blur-sm"
 		onclick={(e) => {
 			if (e.target === e.currentTarget) open = false;
 		}}
 	>
-		<div
-			class="w-full max-w-xl overflow-hidden"
-			style="background: var(--bg-surface); border: 1px solid var(--border-active); box-shadow: 0 0 40px rgba(0,0,0,0.4);"
-		>
+		<div class="w-full max-w-xl overflow-hidden  border border-border bg-card shadow-2xl">
 			<!-- Search input -->
-			<div class="flex items-center gap-3 px-4 py-3 border-b" style="border-color: var(--border-subtle);">
-				<Search class="w-5 h-5" style="color: var(--text-secondary);" />
+			<div class="flex items-center gap-3 px-4 py-3 border-b border-border">
+				<Search class="w-5 h-5 text-muted-foreground" />
 				<input
 					bind:this={inputRef}
 					type="text"
 					placeholder="Search pages, matches, actions..."
-					class="flex-1 bg-transparent text-sm outline-none"
-					style="color: var(--text-primary);"
+					class="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground"
 					bind:value={query}
 				/>
-				<span
-					class="text-[10px] font-mono px-1.5 py-0.5"
-					style="color: var(--text-secondary); border: 1px solid var(--border-subtle); font-family: 'JetBrains Mono', monospace;"
-				>
+				<span class="text-[10px] font-mono px-1.5 py-0.5 border border-border text-muted-foreground">
 					ESC
 				</span>
 			</div>
@@ -158,9 +152,9 @@
 			<div class="max-h-[50vh] overflow-y-auto">
 				{#if filtered.length === 0}
 					<div class="flex flex-col items-center justify-center py-12 gap-2">
-						<Search class="w-8 h-8" style="color: var(--text-secondary); opacity: 0.4;" />
-						<p class="text-sm" style="color: var(--text-secondary);">No results found</p>
-						<p class="text-xs" style="color: var(--text-secondary); opacity: 0.6;">
+						<Search class="w-8 h-8 text-muted-foreground opacity-40" />
+						<p class="text-sm text-muted-foreground">No results found</p>
+						<p class="text-xs text-muted-foreground opacity-60">
 							Try a different search term
 						</p>
 					</div>
@@ -169,30 +163,24 @@
 						{@const isSelected = i === selectedIndex}
 						{@const Icon = item.icon}
 						<button
-							class="flex items-center justify-between w-full px-4 py-3 text-left transition-colors duration-200"
-							style={
+							class={cn(
+								'flex items-center justify-between w-full px-4 py-3 text-left transition-colors duration-200',
 								isSelected
-									? 'background: rgba(74, 222, 128, 0.08); color: var(--accent-green);'
-									: 'color: var(--text-primary);'
-							}
+									? 'bg-football-green/8 text-football-green'
+									: 'text-foreground hover:bg-muted'
+							)}
 							onmouseenter={() => (selectedIndex = i)}
 							onclick={() => executeItem(item)}
 						>
 							<div class="flex items-center gap-3">
-								<Icon class="w-4 h-4" style={isSelected ? 'color: var(--accent-green);' : 'color: var(--text-secondary);'} />
+								<Icon class={cn('w-4 h-4', isSelected ? 'text-football-green' : 'text-muted-foreground')} />
 								<span class="text-sm">{item.label}</span>
-								<span
-									class="text-[10px] font-mono px-1 py-0.5"
-									style="color: var(--text-secondary); border: 1px solid var(--border-subtle); text-transform: uppercase; font-family: 'JetBrains Mono', monospace;"
-								>
+								<span class="text-[10px] font-mono px-1 py-0.5 border border-border text-muted-foreground uppercase">
 									{item.category}
 								</span>
 							</div>
 							{#if item.shortcut}
-								<span
-									class="text-[10px] font-mono px-1.5 py-0.5"
-									style="color: var(--text-secondary); border: 1px solid var(--border-subtle); font-family: 'JetBrains Mono', monospace;"
-								>
+								<span class="text-[10px] font-mono px-1.5 py-0.5 border border-border text-muted-foreground">
 									{item.shortcut}
 								</span>
 							{/if}
@@ -202,10 +190,7 @@
 			</div>
 
 			<!-- Footer hint -->
-			<div
-				class="flex items-center gap-4 px-4 py-2 text-[10px]"
-				style="color: var(--text-secondary); opacity: 0.6; border-top: 1px solid var(--border-subtle); font-family: 'JetBrains Mono', monospace;"
-			>
+			<div class="flex items-center gap-4 px-4 py-2 text-[10px] border-t border-border text-muted-foreground opacity-60 font-mono">
 				<span>&#8593;&#8595; navigate</span>
 				<span>&#8629; select</span>
 				<span>esc close</span>
@@ -213,10 +198,3 @@
 		</div>
 	</div>
 {/if}
-
-<style>
-	input::placeholder {
-		color: var(--text-secondary);
-		opacity: 0.5;
-	}
-</style>

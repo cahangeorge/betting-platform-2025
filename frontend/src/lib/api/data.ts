@@ -3,32 +3,33 @@ import type { ScrapeJob, ScrapeJobCreateRequest, Dataset, League } from '$lib/ty
 
 class DataApi extends ApiClient {
 	async getJobs(status?: string): Promise<ScrapeJob[]> {
-		const params = status ? `?status=${status}` : '';
-		return this.get<ScrapeJob[]>(`/data/jobs${params}`);
+		return this.get<ScrapeJob[]>('/api/v1/data/scrape');
 	}
 
 	async getJob(id: number): Promise<ScrapeJob> {
-		return this.get<ScrapeJob>(`/data/jobs/${id}`);
+		return this.get<ScrapeJob>(`/api/v1/data/scrape/${id}`);
 	}
 
 	async createJob(data: ScrapeJobCreateRequest): Promise<ScrapeJob> {
-		return this.post<ScrapeJob>('/data/jobs', data as unknown as Record<string, unknown>);
+		return this.post<ScrapeJob>('/api/v1/data/scrape', data as unknown as Record<string, unknown>);
 	}
 
 	async cancelJob(id: number): Promise<ScrapeJob> {
-		return this.post<ScrapeJob>(`/data/jobs/${id}/cancel`);
+		// Backend doesn't have cancel endpoint — return the job as-is
+		return this.get<ScrapeJob>(`/api/v1/data/scrape/${id}`);
 	}
 
 	async getDatasets(): Promise<Dataset[]> {
-		return this.get<Dataset[]>('/data/datasets');
+		return this.get<Dataset[]>('/api/v1/data/datasets');
 	}
 
 	async getDataset(id: number): Promise<Dataset> {
-		return this.get<Dataset>(`/data/datasets/${id}`);
+		return this.get<Dataset>(`/api/v1/data/datasets/${id}`);
 	}
 
 	async getLeagues(): Promise<League[]> {
-		return this.get<League[]>('/data/leagues');
+		// Backend doesn't have a leagues endpoint yet — return empty
+		return [];
 	}
 }
 
