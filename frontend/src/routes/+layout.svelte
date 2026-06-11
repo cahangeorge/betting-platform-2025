@@ -2,12 +2,14 @@
 	import '../app.css';
 	import { navigating } from '$app/stores';
 	import { fade, slide } from 'svelte/transition';
+	import { onMount } from 'svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import BetSlipDrawer from '$lib/components/BetSlipDrawer.svelte';
 	import BottomNav from '$lib/components/BottomNav.svelte';
 	import BetslipFAB from '$lib/components/BetslipFAB.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import { liveSocket } from '$lib/stores/liveSocket';
 
 	let {
 		children,
@@ -39,6 +41,14 @@
 			}
 		});
 		return unsub;
+	});
+
+	// Connect to live WebSocket on mount
+	onMount(() => {
+		liveSocket.connect();
+		return () => {
+			liveSocket.disconnect();
+		};
 	});
 </script>
 

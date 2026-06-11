@@ -6,10 +6,10 @@
 		class: className,
 		inset,
 		...restProps
-	}: DropdownMenuPrimitive.LabelProps & { inset?: boolean } = $props();
+	}: DropdownMenuPrimitive.GroupHeadingProps & { inset?: boolean } = $props();
 </script>
 
-<DropdownMenuPrimitive.Label
+<DropdownMenuPrimitive.GroupHeading
 	class={cn(
 		"px-2 py-1.5 text-sm font-semibold",
 		inset && "pl-8",
@@ -18,4 +18,4 @@
 	{...restProps}
 >
 	{@render restProps.children?.()}
-</DropdownMenuPrimitive.Label>
+</DropdownMenuPrimitive.GroupHeading>

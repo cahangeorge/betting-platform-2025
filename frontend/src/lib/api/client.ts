@@ -1,6 +1,8 @@
-// PUBLIC_API_URL: empty string = relative URLs (nginx proxy), http://localhost:8001 for local dev
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const BASE_URL: string = (import.meta as any).env?.PUBLIC_API_URL || '';
+import type { ApiError } from '$lib/types';
+
+// Use empty base URL (same-origin) so auth cookies set by SvelteKit are sent
+// with API requests. The Vite dev server proxies /api/* to the backend.
+const BASE_URL: string = '';
 
 export class ApiClient {
 	private baseUrl: string;

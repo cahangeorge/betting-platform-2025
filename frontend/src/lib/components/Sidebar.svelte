@@ -23,7 +23,7 @@
 	} from './ui/sheet';
 
 	let {
-		open,
+		open = $bindable(false),
 		user
 	}: {
 		open: boolean;

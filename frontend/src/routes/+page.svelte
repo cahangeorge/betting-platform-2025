@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { fade, slide } from 'svelte/transition';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -250,7 +249,7 @@
 		await Promise.all([fetchSummary(), fetchTickets(), fetchUpcoming(), fetchJobLogs(), fetchPnl()]);
 	}
 
-	onMount(() => {
+	$effect(() => {
 		fetchAll();
 		interval = setInterval(fetchAll, 30000);
 		return () => clearInterval(interval);
@@ -276,7 +275,6 @@
 				<Select
 					bind:value={ticketDateFilter}
 					options={ticketDateOptions}
-					class="w-36"
 				/>
 				<a href="/data" class="text-sm text-primary hover:underline">View All</a>
 			</div>
@@ -308,9 +306,9 @@
 						>
 							<div class="space-y-3">
 								<div class="flex items-center justify-between">
-									<span class="text-xs font-mono text-muted-foreground">{ticket.reference}</span>
+									<span class="text-xs font-mono text-muted-foreground">#{ticket.id}</span>
 									<div class="flex gap-1.5">
-										<Badge variant={typeBadgeVariant(ticket.type)}>{ticket.type}</Badge>
+										<Badge variant={typeBadgeVariant(ticket.ticket_type)}>{ticket.ticket_type}</Badge>
 										<Badge variant={statusBadgeVariant(ticket.status)}>{ticket.status}</Badge>
 									</div>
 								</div>
@@ -607,12 +605,12 @@
 						<Card interactive>
 							<div class="flex items-center justify-between py-1">
 								<div class="flex items-center gap-3">
-									<span class="text-sm font-medium text-foreground">{job.name}</span>
-									<Badge variant="neutral">{job.type}</Badge>
+									<span class="text-sm font-medium text-foreground">{job.job_type}</span>
+									<Badge variant="neutral">{job.job_type}</Badge>
 									<Badge variant={jobStatusVariant(job.status)}>{job.status}</Badge>
 								</div>
 								<div class="flex items-center gap-4 text-xs text-muted-foreground">
-									<span class="font-mono">{formatDuration(job.duration_seconds)}</span>
+									<span class="font-mono">{formatDuration(job.completed_at && job.started_at ? (new Date(job.completed_at).getTime() - new Date(job.started_at).getTime()) / 1000 : null)}</span>
 									<span>{formatDateTime(job.created_at)}</span>
 									<svg
 										class="w-4 h-4 transition-transform {expandedJob === job.id ? 'rotate-180' : ''}"
@@ -634,11 +632,11 @@
 									<div class="grid grid-cols-2 gap-2">
 										<div>
 											<span class="text-muted-foreground">Type:</span>
-											<span class="ml-2 font-mono">{job.type}</span>
+											<span class="ml-2 font-mono">{job.job_type}</span>
 										</div>
 										<div>
 											<span class="text-muted-foreground">Progress:</span>
-											<span class="ml-2 font-mono">{job.progress}%</span>
+											<span class="ml-2 font-mono">{job.job_type}</span>
 										</div>
 										<div>
 											<span class="text-muted-foreground">Started:</span>

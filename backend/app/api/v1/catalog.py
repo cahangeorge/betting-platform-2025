@@ -69,6 +69,114 @@ CATALOG: list[CountryInfo] = [
             LeagueInfo(id="pro_league", name="Pro League", matches_count=340),
         ],
     ),
+    CountryInfo(
+        country="Scotland",
+        leagues=[
+            LeagueInfo(id="scottish_premiership", name="Scottish Premiership", matches_count=228),
+        ],
+    ),
+    CountryInfo(
+        country="Russia",
+        leagues=[
+            LeagueInfo(id="russian_premier", name="Russian Premier League", matches_count=240),
+        ],
+    ),
+    CountryInfo(
+        country="Brazil",
+        leagues=[
+            LeagueInfo(id="brasileirao", name="Brasileirão", matches_count=380),
+        ],
+    ),
+    CountryInfo(
+        country="Argentina",
+        leagues=[
+            LeagueInfo(id="liga_profesional", name="Liga Profesional", matches_count=276),
+        ],
+    ),
+    CountryInfo(
+        country="USA",
+        leagues=[
+            LeagueInfo(id="mls", name="MLS", matches_count=476),
+        ],
+    ),
+    CountryInfo(
+        country="Mexico",
+        leagues=[
+            LeagueInfo(id="liga_mx", name="Liga MX", matches_count=306),
+        ],
+    ),
+    CountryInfo(
+        country="Japan",
+        leagues=[
+            LeagueInfo(id="j1_league", name="J1 League", matches_count=306),
+        ],
+    ),
+    CountryInfo(
+        country="South Korea",
+        leagues=[
+            LeagueInfo(id="k_league_1", name="K League 1", matches_count=228),
+        ],
+    ),
+    CountryInfo(
+        country="Saudi Arabia",
+        leagues=[
+            LeagueInfo(id="saudi_pro_league", name="Saudi Pro League", matches_count=306),
+        ],
+    ),
+    CountryInfo(
+        country="Austria",
+        leagues=[
+            LeagueInfo(id="bundesliga_at", name="Bundesliga", matches_count=198),
+        ],
+    ),
+    CountryInfo(
+        country="Switzerland",
+        leagues=[
+            LeagueInfo(id="super_league_ch", name="Super League", matches_count=198),
+        ],
+    ),
+    CountryInfo(
+        country="Denmark",
+        leagues=[
+            LeagueInfo(id="superliga", name="Superliga", matches_count=198),
+        ],
+    ),
+    CountryInfo(
+        country="Sweden",
+        leagues=[
+            LeagueInfo(id="allsvenskan", name="Allsvenskan", matches_count=240),
+        ],
+    ),
+    CountryInfo(
+        country="Norway",
+        leagues=[
+            LeagueInfo(id="eliteserien", name="Eliteserien", matches_count=240),
+        ],
+    ),
+    CountryInfo(
+        country="Poland",
+        leagues=[
+            LeagueInfo(id="ekstraklasa", name="Ekstraklasa", matches_count=306),
+        ],
+    ),
+    CountryInfo(
+        country="Czech Republic",
+        leagues=[
+            LeagueInfo(id="fortuna_liga", name="Fortuna Liga", matches_count=245),
+        ],
+    ),
+    CountryInfo(
+        country="Romania",
+        leagues=[
+            LeagueInfo(id="liga_1", name="Liga I", matches_count=306),
+        ],
+    ),
+    CountryInfo(
+        country="Croatia",
+        leagues=[
+            LeagueInfo(id="hnl", name="HNL", matches_count=198),
+        ],
+    ),
 ]
 
 

@@ -39,7 +39,7 @@ class FlexibleCORSMiddleware(BaseHTTPMiddleware):
                         "Access-Control-Allow-Origin": origin,
                         "Access-Control-Allow-Credentials": "true",
                         "Access-Control-Allow-Methods": "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT",
-                        "Access-Control-Allow-Headers": "*",
+                        "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Requested-With",
                         "Access-Control-Max-Age": "600",
                     },
                 )

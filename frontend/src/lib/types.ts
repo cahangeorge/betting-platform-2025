@@ -35,6 +35,16 @@ export interface Match {
 	home_score: number | null;
 	away_score: number | null;
 	odds: Odd[];
+	// Live match properties
+	minute?: number;
+	momentum?: string;
+	momentum_intensity?: 'overwhelming' | 'strong' | 'moderate' | 'weak';
+	xg_home?: number;
+	xg_away?: number;
+	possession_home?: number;
+	possession_away?: number;
+	shots_home?: number;
+	shots_away?: number;
 }
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled';
@@ -336,14 +346,13 @@ export interface DashboardSummary {
 
 export interface JobLog {
 	id: number;
-	name: string;
-	type: string;
+	job_type: string;
 	status: string;
-	progress: number;
-	created_at: string;
+	league: string | null;
+	started_at: string | null;
 	completed_at: string | null;
 	error: string | null;
-	duration_seconds: number | null;
+	created_at: string;
 }
 
 // ─── Analytics ────────────────────────────────────────
@@ -386,8 +395,8 @@ export interface Strategy {
 // ─── Extended Dashboard Types ─────────────────────────
 export interface DashboardTicket {
 	id: number;
-	reference: string;
-	type: TicketType;
+	reference: string | null;
+	ticket_type: string;
 	status: TicketStatus;
 	stake: number;
 	total_odds: number;

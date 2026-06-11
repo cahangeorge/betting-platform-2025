@@ -43,8 +43,7 @@
 		return Object.keys(newErrors).length === 0;
 	}
 
-	async function handleSubmit(e: SubmitEvent) {
-		e.preventDefault();
+	async function handleSubmit() {
 		if (!validate()) return;
 
 		loading = true;
@@ -69,7 +68,7 @@
 	}
 </script>
 
-<form onsubmit={handleSubmit} class="space-y-5">
+<form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-5">
 	{#if error}
 		<div class="p-3 text-sm  bg-destructive/10 border border-destructive/30 text-destructive">
 			{error}

@@ -11,10 +11,20 @@
 	import Loading from './Loading.svelte';
 	import EquityCurveChart from './charts/EquityCurveChart.svelte';
 
-	let bankrolls = $state<Bankroll[]>([]);
-	let accounts = $state<BookmakerAccount[]>([]);
-	let ledger = $state<LedgerEntry[]>([]);
-	let loading = $state(true);
+	let {
+		serverBankrolls = [],
+		serverAccounts = [],
+		serverLedger = []
+	}: {
+		serverBankrolls?: Bankroll[];
+		serverAccounts?: BookmakerAccount[];
+		serverLedger?: LedgerEntry[];
+	} = $props();
+
+	let bankrolls = $state<Bankroll[]>(serverBankrolls);
+	let accounts = $state<BookmakerAccount[]>(serverAccounts);
+	let ledger = $state<LedgerEntry[]>(serverLedger);
+	let loading = $state(false);
 	let error = $state('');
 	let activeTab = $state('bankrolls');
 
@@ -92,7 +102,10 @@
 	}
 
 	$effect(() => {
-		loadData();
+		// Only fetch client-side if server didn't provide data
+		if (bankrolls.length === 0) {
+			loadData();
+		}
 	});
 
 	const tabs = $derived([

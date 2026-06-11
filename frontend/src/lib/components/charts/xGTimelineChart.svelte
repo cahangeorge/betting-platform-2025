@@ -21,8 +21,8 @@
 		legend
 		tooltip={{ mode: 'bisect-x' }}
 		props={{
-			gradient: {
-				opacity: 0.2
+			area: {
+				fillOpacity: 0.2
 			},
 			tooltip: {
 				item: { format: 'decimal' }

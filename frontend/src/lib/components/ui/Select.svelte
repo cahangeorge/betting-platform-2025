@@ -8,7 +8,8 @@
 		options,
 		placeholder = 'Select...',
 		disabled = false,
-		name
+		name,
+		onchange
 	}: {
 		value: string;
 		label?: string;
@@ -16,6 +17,7 @@
 		placeholder?: string;
 		disabled?: boolean;
 		name?: string;
+		onchange?: (e: Event) => void;
 	} = $props();
 </script>
 
@@ -25,7 +27,7 @@
 			{label}
 		</label>
 	{/if}
-	<ShadcnSelect {name} {disabled} bind:value>
+	<ShadcnSelect {name} {disabled} bind:value onchange={onchange}>
 		<option value="" disabled>{placeholder}</option>
 		{#each options as opt (opt.value)}
 			<option value={opt.value}>{opt.label}</option>

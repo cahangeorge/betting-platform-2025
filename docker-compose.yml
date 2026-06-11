@@ -34,12 +34,11 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql+asyncpg://betuser:${POSTGRES_PASSWORD:-betpassword_dev}@postgres:5432/betting_platform
-      REDIS_URL: redis://redis:6379/0
-      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
-      CORS_ORIGINS: http://localhost:5173,http://frontend:3000,http://localhost:3000,http://localhost:8000
+      BET_DATABASE_URL: postgresql+asyncpg://betuser:${POSTGRES_PASSWORD:-betpassword_dev}@postgres:5432/betting_platform
+      BET_JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      BET_CORS_ORIGINS: http://localhost:5173,http://frontend:3000,http://localhost:3000,http://localhost:8000
+      BET_DEBUG: "false"
       PYTHONPATH: /app
-      ENVIRONMENT: development
     ports:
       - "8000:8000"
     depends_on:

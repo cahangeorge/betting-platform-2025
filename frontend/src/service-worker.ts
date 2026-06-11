@@ -48,7 +48,7 @@ sw.addEventListener('fetch', (event) => {
 	const isAsset = ASSETS.includes(url.pathname);
 
 	if (isApiCall) {
-		// Network-first for API calls
+		// Network-first for API calls — don't cache failures
 		event.respondWith(networkFirst(event.request));
 	} else if (isAsset || url.origin === self.location.origin) {
 		// Cache-first for app assets
@@ -69,7 +69,7 @@ async function cacheFirst(request: Request): Promise<Response> {
 		}
 		return response;
 	} catch {
-		// Return offline fallback
+		// Return offline fallback for assets
 		return new Response('Offline', { status: 503 });
 	}
 }
@@ -77,18 +77,21 @@ async function cacheFirst(request: Request): Promise<Response> {
 async function networkFirst(request: Request): Promise<Response> {
 	try {
 		const response = await fetch(request);
+		// Only cache successful responses, not errors
 		if (response.ok) {
 			const cache = await caches.open(CACHE);
 			cache.put(request, response.clone());
 		}
 		return response;
 	} catch {
+		// Try cache as fallback
 		const cache = await caches.open(CACHE);
 		const cached = await cache.match(request);
 		if (cached) {
 			return cached;
 		}
-		return new Response(JSON.stringify({ error: 'You are offline' }), {
+		// Return a clear error — don't pretend we're offline if the server is just slow
+		return new Response(JSON.stringify({ error: 'Network request failed' }), {
 			status: 503,
 			headers: { 'Content-Type': 'application/json' }
 		});

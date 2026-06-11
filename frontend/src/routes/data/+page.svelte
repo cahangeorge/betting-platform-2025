@@ -16,6 +16,15 @@
 	import { ticketsApi } from '$lib/api/tickets';
 	import { predictionsApi } from '$lib/api/predictions';
 	import type { Match, Ticket, PredictionRun } from '$lib/types';
+	import Select from '$lib/components/ui/Select.svelte';
+
+	let { data }: import('./$types').PageProps = $props();
+
+	// Safe access with fallbacks — server load may not have all fields yet
+	const serverData = $derived(data ?? {});
+	let matches = $state<Match[]>((serverData as any).matches ?? []);
+	let tickets = $state<Ticket[]>((serverData as any).tickets ?? []);
+	let predictionRuns = $state<PredictionRun[]>((serverData as any).predictionRuns ?? []);
 
 	// ── State ──────────────────────────────────────────
 	let activeTab = $state('matches');
@@ -25,13 +34,9 @@
 	let page = $state(1);
 	let perPage = $state(10);
 
-	let matches = $state<Match[]>([]);
-	let tickets = $state<Ticket[]>([]);
-	let predictionRuns = $state<PredictionRun[]>([]);
-
-	let matchesLoading = $state(true);
-	let ticketsLoading = $state(true);
-	let predictionsLoading = $state(true);
+	let matchesLoading = $state(false);
+	let ticketsLoading = $state(false);
+	let predictionsLoading = $state(false);
 
 	let dialogOpen = $state(false);
 	let selectedRow = $state<Record<string, unknown> | null>(null);
@@ -58,7 +63,7 @@
 			if (dateTo) filter.date_to = dateTo;
 			matches = await matchesApi.getMatches(
 				Object.keys(filter).length > 0
-					? (filter as { date_from?: string; date_to?: string; status?: string })
+					? (filter as { date_from?: string; date_to?: string; status?: 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled' })
 					: undefined
 			);
 		} catch {
@@ -317,9 +322,9 @@
 
 	// ── Lifecycle ──────────────────────────────────────
 	onMount(() => {
-		fetchMatches();
-		fetchTickets();
-		fetchPredictions();
+		if (matches.length === 0) fetchMatches();
+		if (tickets.length === 0) fetchTickets();
+		if (predictionRuns.length === 0) fetchPredictions();
 	});
 
 	$effect(() => {
@@ -417,9 +422,9 @@
 													{row[col.key]}
 												</Badge>
 											{:else if col.key === 'league'}
-												<Badge variant="info">{row[col.key]}</Badge>
+												<Badge variant="info">{row[col.key as keyof typeof row]}</Badge>
 											{:else}
-												{row[col.key] ?? '--'}
+												{row[col.key as keyof typeof row] ?? '--'}
 											{/if}
 										</td>
 									{/each}
@@ -436,7 +441,7 @@
 						<Select
 							value={String(perPage)}
 							options={perPageOptions}
-							onchange={(e) => {
+							onchange={(e: Event) => {
 								perPage = Number((e.target as HTMLSelectElement).value);
 								resetPagination();
 							}}
@@ -498,39 +503,11 @@
 									<span>{leg.home_team} vs {leg.away_team}</span>
 									<span class="font-mono">{leg.odds}</span>
 								</div>
-								<div class="flex justify-between text-xs text-muted-foreground mt-1">
-									<span>{leg.market} — {leg.selection}</span>
-									<span class={leg.status === 'won' ? 'text-football-green' : leg.status === 'lost' ? 'text-football-red' : ''}>{leg.status}</span>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-
-				<!-- Prediction results if present -->
-				{#if selectedRow.results && Array.isArray(selectedRow.results) && selectedRow.results.length > 0}
-					<div class="mt-4">
-						<h4 class="text-sm font-semibold text-foreground mb-2">Results</h4>
-						{#each selectedRow.results as result}
-							<div class="p-2 bg-muted/30 border border-border mb-2 text-sm">
-								<div class="flex justify-between">
-									<span>{result.home_team} vs {result.away_team}</span>
-									<span class="font-mono text-xs">{result.predicted_score}</span>
-								</div>
-								<div class="flex gap-4 text-xs text-muted-foreground mt-1">
-									<span>Home: {(result.home_prob * 100).toFixed(1)}%</span>
-									<span>Draw: {(result.draw_prob * 100).toFixed(1)}%</span>
-									<span>Away: {(result.away_prob * 100).toFixed(1)}%</span>
-									<span>Confidence: {(result.confidence * 100).toFixed(1)}%</span>
-								</div>
 							</div>
 						{/each}
 					</div>
 				{/if}
 			</div>
 		{/if}
-		<DialogFooter>
-			<Button variant="secondary" onclick={() => (dialogOpen = false)}>Close</Button>
-		</DialogFooter>
 	</DialogContent>
 </DialogRoot>

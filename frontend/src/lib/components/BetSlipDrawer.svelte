@@ -4,7 +4,7 @@
 	import Button from './ui/Button.svelte';
 	import Input from './ui/Input.svelte';
 	import Badge from './ui/Badge.svelte';
-	import Separator from './ui/separator';
+	import { Separator } from './ui/separator';
 
 	interface BetLeg {
 		id: string;

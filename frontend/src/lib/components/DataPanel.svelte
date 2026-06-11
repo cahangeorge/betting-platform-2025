@@ -24,7 +24,7 @@
 	let newJobError = $state('');
 	let newJobSubmitting = $state(false);
 
-	const statusBadge: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
+	const statusBadge: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
 		completed: 'success',
 		running: 'warning',
 		queued: 'info',

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { authApi } from '$lib/api/auth';
-	import { Menu, Activity } from 'lucide-svelte';
+	import { Menu, Activity, Wifi, WifiOff } from 'lucide-svelte';
 	import { cn } from '$lib/utils';
 	import Button from './ui/Button.svelte';
 	import { ThemeToggle } from './ui/theme-toggle';
@@ -13,6 +13,7 @@
 		DropdownMenuSeparator,
 		DropdownMenuLabel
 	} from './ui/dropdown-menu';
+	import { liveSocket } from '$lib/stores/liveSocket';
 
 	let {
 		user,
@@ -23,7 +24,7 @@
 	} = $props();
 
 	let now = $state(new Date());
-	let connected = $state(true);
+	let wsStatus = $state('disconnected');
 
 	async function handleLogout() {
 		try {
@@ -39,6 +40,13 @@
 			now = new Date();
 		}, 1000);
 		return () => clearInterval(interval);
+	});
+
+	$effect(() => {
+		const unsub = liveSocket.subscribe((s) => {
+			wsStatus = s.status;
+		});
+		return unsub;
 	});
 
 	let timeStr = $derived(
@@ -72,7 +80,16 @@
 			<ThemeToggle />
 
 			<div class="hidden md:flex items-center space-x-3">
-				<Activity class="w-3 h-3 {connected ? 'text-football-green' : 'text-destructive'}" />
+				{#if wsStatus === 'connected'}
+					<Wifi class="w-3 h-3 text-football-green" />
+					<span class="text-xs font-mono text-football-green">Live</span>
+				{:else if wsStatus === 'connecting' || wsStatus === 'reconnecting'}
+					<Activity class="w-3 h-3 text-amber-500 animate-pulse" />
+					<span class="text-xs font-mono text-amber-500">Connecting...</span>
+				{:else}
+					<WifiOff class="w-3 h-3 text-destructive" />
+					<span class="text-xs font-mono text-destructive">Offline</span>
+				{/if}
 				<span class="text-xs font-mono text-muted-foreground">{timeStr}</span>
 			</div>
 

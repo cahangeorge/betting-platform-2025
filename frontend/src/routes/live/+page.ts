@@ -1,9 +1,10 @@
 import type { PageLoad } from './$types';
 import { matchesApi } from '$lib/api/matches';
+import type { MatchFilter } from '$lib/types';
 
 export const load: PageLoad = async ({ fetch }) => {
 	try {
-		const matches = await matchesApi.getMatches(fetch, { status: 'live' });
+		const matches = await matchesApi.getMatches({ status: 'live' } as MatchFilter);
 		return {
 			matches,
 			loading: false,

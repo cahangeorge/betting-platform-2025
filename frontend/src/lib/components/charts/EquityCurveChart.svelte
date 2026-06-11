@@ -25,8 +25,8 @@
 		legend={false}
 		tooltip={{ mode: 'bisect-x' }}
 		props={{
-			gradient: {
-				opacity: 0.3
+			area: {
+				fillOpacity: 0.3
 			},
 			tooltip: {
 				header: {

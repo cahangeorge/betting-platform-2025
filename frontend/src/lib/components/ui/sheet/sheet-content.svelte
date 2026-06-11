@@ -2,6 +2,7 @@
 	import { Dialog as DialogPrimitive } from "bits-ui";
 	import { cn } from "$lib/utils.js";
 	import type { Snippet } from "svelte";
+	import { slide } from "svelte/transition";
 
 	type Side = "top" | "bottom" | "left" | "right";
 
