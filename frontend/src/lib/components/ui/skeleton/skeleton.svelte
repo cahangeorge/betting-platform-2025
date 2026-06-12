@@ -11,4 +11,4 @@
 <div
 	class={cn("animate-pulse  bg-muted", className)}
 	{...restProps}
-/>
+></div>

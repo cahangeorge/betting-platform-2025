@@ -35,13 +35,22 @@ class StrategyUpdateRequest(BaseModel):
     is_active: bool | None = None
 
 
+class StrategyRunFilters(BaseModel):
+    countries: list[str] = []
+    leagues: list[str] = []
+    date_from: str | None = None
+    date_to: str | None = None
+
+
 class StrategyRunRequest(BaseModel):
     match_ids: list[int] = []
     markets: list[str] = []
     parameters: dict = {}
+    filters: StrategyRunFilters | None = None
 
 
 class StrategyRunResponse(BaseModel):
     run_id: int
     status: str
     matches_count: int = 0
+    error: str | None = None

@@ -27,14 +27,24 @@ class Match(Base):
     competition: Mapped[str | None] = mapped_column(String(255), nullable=True)
     season: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
     odds: Mapped[list["OddsEntry"]] = relationship("OddsEntry", back_populates="match", cascade="all, delete-orphan")
     stats: Mapped[list["MatchStat"]] = relationship("MatchStat", back_populates="match", cascade="all, delete-orphan")
-    sources: Mapped[list["MatchSource"]] = relationship("MatchSource", back_populates="match", cascade="all, delete-orphan")
-    model_predictions: Mapped[list["ModelPrediction"]] = relationship("ModelPrediction", back_populates="match", cascade="all, delete-orphan")
-    ensemble_predictions: Mapped[list["EnsemblePrediction"]] = relationship("EnsemblePrediction", back_populates="match", cascade="all, delete-orphan")
-    ticket_legs: Mapped[list["TicketLeg"]] = relationship("TicketLeg", back_populates="match", cascade="all, delete-orphan")
+    sources: Mapped[list["MatchSource"]] = relationship(
+        "MatchSource", back_populates="match", cascade="all, delete-orphan"
+    )
+    model_predictions: Mapped[list["ModelPrediction"]] = relationship(
+        "ModelPrediction", back_populates="match", cascade="all, delete-orphan"
+    )
+    ensemble_predictions: Mapped[list["EnsemblePrediction"]] = relationship(
+        "EnsemblePrediction", back_populates="match", cascade="all, delete-orphan"
+    )
+    ticket_legs: Mapped[list["TicketLeg"]] = relationship(
+        "TicketLeg", back_populates="match", cascade="all, delete-orphan"
+    )
 
 
 class OddsEntry(Base):

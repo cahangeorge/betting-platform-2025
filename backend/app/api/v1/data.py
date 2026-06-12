@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.database import get_db
-from app.models.scrape import ScrapeJob, ScrapedDataset
+from app.models.scrape import ScrapedDataset, ScrapeJob
 from app.models.user import User
-from app.schemas.data import ScrapeJobCreateRequest, ScrapeJobResponse, ScrapedDatasetResponse
+from app.schemas.data import ScrapedDatasetResponse, ScrapeJobCreateRequest, ScrapeJobResponse
 from app.services.scraper import create_scrape_job, execute_scrape_job
 
 router = APIRouter()
@@ -28,7 +28,10 @@ async def run_scrape_job(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    job = await execute_scrape_job(db, job_id)
+    try:
+        job = await execute_scrape_job(db, job_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     return job
 
 
@@ -44,6 +47,18 @@ async def list_scrape_jobs(
     return result.scalars().all()
 
 
+@router.get("/scrape/{job_id}", response_model=ScrapeJobResponse)
+async def get_scrape_job(
+    job_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    job = await db.get(ScrapeJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Scrape job not found")
+    return job
+
+
 @router.get("/datasets", response_model=list[ScrapedDatasetResponse])
 async def list_datasets(
     page: int = Query(1, ge=1),
@@ -51,7 +66,9 @@ async def list_datasets(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    stmt = select(ScrapedDataset).order_by(ScrapedDataset.created_at.desc()).offset((page - 1) * per_page).limit(per_page)
+    stmt = (
+        select(ScrapedDataset).order_by(ScrapedDataset.created_at.desc()).offset((page - 1) * per_page).limit(per_page)
+    )
     result = await db.execute(stmt)
     return result.scalars().all()
 

@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { fade, slide } from 'svelte/transition';
 	import Card from '$lib/components/ui/Card.svelte';
+	import BetslipReviewCallout from '$lib/components/BetslipReviewCallout.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
 	import Skeleton from '$lib/components/ui/skeleton/skeleton.svelte';
 	import { dashboardApi } from '$lib/api/dashboard';
 	import { analyticsApi } from '$lib/api/analytics';
+	import { betslip, createBetslipLeg } from '$lib/stores/betslip';
 	import type {
 		DashboardSummary,
 		DashboardTicket,
@@ -224,20 +226,21 @@
 		});
 	}
 
-	function addMatchToBetSlip(match: UpcomingMatch) {
-		// Dispatch custom event for the betslip drawer to pick up
-		window.dispatchEvent(
-			new CustomEvent('betslip:add', {
-				detail: {
-					match_id: match.id,
-					home_team: match.home_team,
-					away_team: match.away_team,
-					league: match.league,
-					start_time: match.start_time,
-					home_odds: match.home_odds,
-					draw_odds: match.draw_odds,
-					away_odds: match.away_odds
-				}
+	function addMatchToBetSlip(
+		match: UpcomingMatch,
+		selection: { key: 'home' | 'draw' | 'away'; label: 'Home' | 'Draw' | 'Away'; odds: number | null }
+	) {
+		if (!selection.odds) return;
+		betslip.addLeg(
+			createBetslipLeg({
+				matchId: match.id,
+				matchName: `${match.home_team} vs ${match.away_team}`,
+				market: '1X2',
+				selection: selection.label,
+				odds: selection.odds,
+				league: match.league,
+				kickoff: match.start_time,
+				source: 'dashboard'
 			})
 		);
 	}
@@ -267,6 +270,8 @@
 </script>
 
 <div class="space-y-8" transition:fade={{ duration: 200 }}>
+	<BetslipReviewCallout label="Dashboard picks are ready for ticket review." />
+
 	<!-- Section A: Recent Tickets -->
 	<section>
 		<div class="flex items-center justify-between mb-4">
@@ -419,38 +424,33 @@
 								<span class="text-xs text-muted-foreground">vs</span>
 								<span class="text-sm font-medium text-foreground">{match.away_team}</span>
 							</div>
-							<div class="flex items-center justify-center gap-6 py-1">
-								<div class="text-center">
+							<div class="grid grid-cols-3 gap-2 py-1">
+								<button class="text-center" onclick={() => addMatchToBetSlip(match, { key: 'home', label: 'Home', odds: match.home_odds })}>
 									<p class="text-[10px] text-muted-foreground">1</p>
 									<p class="text-sm font-mono font-semibold text-football-green">
 										{match.home_odds?.toFixed(2) ?? '--'}
 									</p>
-								</div>
-								<div class="text-center">
+								</button>
+								<button class="text-center" onclick={() => addMatchToBetSlip(match, { key: 'draw', label: 'Draw', odds: match.draw_odds })}>
 									<p class="text-[10px] text-muted-foreground">X</p>
 									<p class="text-sm font-mono font-semibold text-football-blue">
 										{match.draw_odds?.toFixed(2) ?? '--'}
 									</p>
-								</div>
-								<div class="text-center">
+								</button>
+								<button class="text-center" onclick={() => addMatchToBetSlip(match, { key: 'away', label: 'Away', odds: match.away_odds })}>
 									<p class="text-[10px] text-muted-foreground">2</p>
 									<p class="text-sm font-mono font-semibold text-football-gold">
 										{match.away_odds?.toFixed(2) ?? '--'}
 									</p>
-								</div>
+								</button>
 							</div>
 							<div class="flex gap-2">
-								<a href="/predict?match={match.id}" class="flex-1">
+								<a href={`/predict?match=${match.id}`} class="flex-1">
 									<Button variant="secondary" size="sm" fullWidth>Predict</Button>
 								</a>
-								<Button
-									variant="glow"
-									size="sm"
-									fullWidth
-									onclick={() => addMatchToBetSlip(match)}
-								>
-									Add to Bet Slip
-								</Button>
+								<a href="/tickets" class="flex-1">
+									<Button variant="glow" size="sm" fullWidth>Review Slip</Button>
+								</a>
 							</div>
 						</div>
 					</Card>

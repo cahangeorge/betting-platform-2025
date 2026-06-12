@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { authApi } from '$lib/api/auth';
-	import { Menu, Activity, Wifi, WifiOff } from 'lucide-svelte';
+	import { Menu, Activity, Search, Wifi, WifiOff } from 'lucide-svelte';
 	import { cn } from '$lib/utils';
 	import Button from './ui/Button.svelte';
 	import { ThemeToggle } from './ui/theme-toggle';
@@ -17,10 +17,12 @@
 
 	let {
 		user,
-		onToggleSidebar
+		onToggleSidebar,
+		onOpenCommandPalette
 	}: {
 		user: { name: string; email: string } | null;
 		onToggleSidebar: () => void;
+		onOpenCommandPalette: () => void;
 	} = $props();
 
 	let now = $state(new Date());
@@ -29,9 +31,9 @@
 	async function handleLogout() {
 		try {
 			await authApi.logout();
-			window.location.href = '/login';
+				goto('/login');
 		} catch {
-			window.location.href = '/login';
+				goto('/login');
 		}
 	}
 
@@ -52,6 +54,7 @@
 	let timeStr = $derived(
 		now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 	);
+	const homeHref = $derived(user ? '/' : '/board');
 </script>
 
 <nav
@@ -69,7 +72,7 @@
 			>
 				<Menu class="w-5 h-5 text-muted-foreground" />
 			</Button>
-			<a href="/" class="flex items-center space-x-3">
+			<a href={homeHref} class="flex items-center space-x-3">
 				<span class="text-lg font-extrabold tracking-tight hidden sm:inline text-foreground font-sport tracking-wider">
 					Betfront
 				</span>
@@ -77,6 +80,18 @@
 		</div>
 
 		<div class="flex items-center space-x-4">
+			<Button
+				variant="ghost"
+				size="sm"
+				class="hidden md:flex items-center gap-2 px-3"
+				onclick={onOpenCommandPalette}
+				aria-label="Open command palette"
+			>
+				<Search class="w-4 h-4 text-muted-foreground" />
+				<span class="text-sm text-muted-foreground">Go to…</span>
+				<span class="text-[10px] font-mono text-muted-foreground">Ctrl/⌘ K</span>
+			</Button>
+
 			<ThemeToggle />
 
 			<div class="hidden md:flex items-center space-x-3">

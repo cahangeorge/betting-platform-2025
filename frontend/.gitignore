@@ -25,6 +25,8 @@ Thumbs.db
 
 # Vite
 .vite/
+test-results/
+playwright-report/
 
 # Logs
 *.log

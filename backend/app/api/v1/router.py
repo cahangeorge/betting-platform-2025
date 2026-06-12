@@ -1,6 +1,19 @@
 from fastapi import APIRouter
 
-from app.api.v1 import analytics, auth, bankroll, catalog, data, dashboard, jobs, live, matches, predictions, strategies, tickets
+from app.api.v1 import (
+    analytics,
+    auth,
+    bankroll,
+    catalog,
+    dashboard,
+    data,
+    jobs,
+    live,
+    matches,
+    predictions,
+    strategies,
+    tickets,
+)
 
 v1_router = APIRouter(prefix="/api/v1")
 

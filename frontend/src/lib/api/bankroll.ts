@@ -8,6 +8,15 @@ import type {
 } from '$lib/types';
 
 class BankrollApi extends ApiClient {
+	private async resolveBankrollId(bankrollId?: number): Promise<number | null> {
+		if (bankrollId) {
+			return bankrollId;
+		}
+
+		const bankrolls = await this.getBankrolls();
+		return bankrolls[0]?.id ?? null;
+	}
+
 	async getBankrolls(): Promise<Bankroll[]> {
 		return this.get<Bankroll[]>('/api/v1/bankroll');
 	}
@@ -25,7 +34,10 @@ class BankrollApi extends ApiClient {
 	}
 
 	async getAccounts(bankrollId?: number): Promise<BookmakerAccount[]> {
-		const bid = bankrollId || 1;
+		const bid = await this.resolveBankrollId(bankrollId);
+		if (bid === null) {
+			return [];
+		}
 		return this.get<BookmakerAccount[]>(`/api/v1/bankroll/${bid}/accounts`);
 	}
 
@@ -34,7 +46,10 @@ class BankrollApi extends ApiClient {
 	}
 
 	async getLedger(bankrollId?: number): Promise<LedgerEntry[]> {
-		const bid = bankrollId || 1;
+		const bid = await this.resolveBankrollId(bankrollId);
+		if (bid === null) {
+			return [];
+		}
 		return this.get<LedgerEntry[]>(`/api/v1/bankroll/${bid}/ledger`);
 	}
 }

@@ -73,14 +73,21 @@
 	const totalXg = $derived(match.stats.xg_home + match.stats.xg_away || 1);
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div
+	role="button"
+	tabindex="0"
 	class={cn(
 		'relative overflow-hidden transition-all duration-200  border border-border bg-card cursor-pointer',
 		mom.side === 'home' && 'shadow-[inset_4px_0_12px_rgba(74,222,128,0.1)]',
 		mom.side === 'away' && 'shadow-[inset_-4px_0_12px_rgba(56,189,248,0.1)]'
 	)}
 	onclick={() => (expanded = !expanded)}
+	onkeydown={(event) => {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			expanded = !expanded;
+		}
+	}}
 >
 	<!-- Main scoreboard row -->
 	<div class="flex items-center justify-between px-4 py-3">

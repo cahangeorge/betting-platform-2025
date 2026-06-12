@@ -28,8 +28,12 @@ class PredictionRun(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     user: Mapped["User | None"] = relationship("User", back_populates="prediction_runs")
-    model_predictions: Mapped[list["ModelPrediction"]] = relationship("ModelPrediction", back_populates="run", cascade="all, delete-orphan")
-    ensemble_predictions: Mapped[list["EnsemblePrediction"]] = relationship("EnsemblePrediction", back_populates="run", cascade="all, delete-orphan")
+    model_predictions: Mapped[list["ModelPrediction"]] = relationship(
+        "ModelPrediction", back_populates="run", cascade="all, delete-orphan"
+    )
+    ensemble_predictions: Mapped[list["EnsemblePrediction"]] = relationship(
+        "EnsemblePrediction", back_populates="run", cascade="all, delete-orphan"
+    )
 
 
 class ModelPrediction(Base):
@@ -37,6 +41,7 @@ class ModelPrediction(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_id: Mapped[int] = mapped_column(ForeignKey("prediction_runs.id", ondelete="CASCADE"), nullable=False)
+    model_type: Mapped[str] = mapped_column(String(100), nullable=False)
     match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), nullable=False)
     market: Mapped[str] = mapped_column(String(50), nullable=False)
     home_prob: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
@@ -81,7 +86,9 @@ class PredictionSession(Base):
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    predictions: Mapped[list["Prediction"]] = relationship("Prediction", back_populates="session", cascade="all, delete-orphan")
+    predictions: Mapped[list["Prediction"]] = relationship(
+        "Prediction", back_populates="session", cascade="all, delete-orphan"
+    )
 
 
 class Prediction(Base):

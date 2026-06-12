@@ -1,5 +1,6 @@
 import asyncio
-from datetime import datetime, timezone, date as date_type
+from datetime import date as date_type
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,15 +26,40 @@ def _to_datetime(val: str | None) -> datetime | None:
         except ValueError:
             return None
 
+
 PREDICT_MODELS = [
     {"key": "PoissonGoalsModel", "label": "Poisson", "description": "Independent Poisson goals model."},
-    {"key": "BivariatePoissonGoalModel", "label": "Bivariate Poisson", "description": "Karlis-Ntzoufras bivariate Poisson."},
-    {"key": "DixonColesGoalModel", "label": "Dixon-Coles", "description": "Poisson with low-score dependency correction."},
-    {"key": "NegativeBinomialGoalModel", "label": "Negative Binomial", "description": "Overdispersed Poisson alternative."},
-    {"key": "ZeroInflatedPoissonGoalsModel", "label": "Zero-Inflated Poisson", "description": "Poisson with zero-inflation component."},
-    {"key": "WeibullCopulaGoalsModel", "label": "Weibull Copula", "description": "Weibull-count goals with copula dependency."},
+    {
+        "key": "BivariatePoissonGoalModel",
+        "label": "Bivariate Poisson",
+        "description": "Karlis-Ntzoufras bivariate Poisson.",
+    },
+    {
+        "key": "DixonColesGoalModel",
+        "label": "Dixon-Coles",
+        "description": "Poisson with low-score dependency correction.",
+    },
+    {
+        "key": "NegativeBinomialGoalModel",
+        "label": "Negative Binomial",
+        "description": "Overdispersed Poisson alternative.",
+    },
+    {
+        "key": "ZeroInflatedPoissonGoalsModel",
+        "label": "Zero-Inflated Poisson",
+        "description": "Poisson with zero-inflation component.",
+    },
+    {
+        "key": "WeibullCopulaGoalsModel",
+        "label": "Weibull Copula",
+        "description": "Weibull-count goals with copula dependency.",
+    },
     {"key": "BayesianGoalModel", "label": "Bayesian Goal", "description": "Bayesian Poisson goals model (MCMC)."},
-    {"key": "HierarchicalBayesianGoalModel", "label": "Bayesian Hierarchical", "description": "Hierarchical Bayesian goals model (MCMC)."},
+    {
+        "key": "HierarchicalBayesianGoalModel",
+        "label": "Bayesian Hierarchical",
+        "description": "Hierarchical Bayesian goals model (MCMC).",
+    },
 ]
 
 MARKET_OUTCOMES = {
@@ -43,9 +69,14 @@ MARKET_OUTCOMES = {
 }
 
 
-async def fetch_training_matches(db: AsyncSession, league: str, sport: str = "football",
-                                 limit: int = 380, date_from: str | None = None,
-                                 date_to: str | None = None) -> list[Match]:
+async def fetch_training_matches(
+    db: AsyncSession,
+    league: str,
+    sport: str = "football",
+    limit: int = 380,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list[Match]:
     df = _to_datetime(date_from)
     dt = _to_datetime(date_to)
     stmt = select(Match).where(
@@ -63,11 +94,16 @@ async def fetch_training_matches(db: AsyncSession, league: str, sport: str = "fo
     return list(result.scalars().all())
 
 
-async def fetch_target_matches(db: AsyncSession, league: str, sport: str = "football",
-                               target_mode: str = "future", limit: int = 50,
-                               target_match_ids: list[int] | None = None,
-                               date_from: str | None = None,
-                               date_to: str | None = None) -> list[Match]:
+async def fetch_target_matches(
+    db: AsyncSession,
+    league: str,
+    sport: str = "football",
+    target_mode: str = "future",
+    limit: int = 50,
+    target_match_ids: list[int] | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+) -> list[Match]:
     if target_mode == "matches" and target_match_ids:
         stmt = select(Match).where(Match.id.in_(target_match_ids))
         result = await db.execute(stmt)
@@ -149,41 +185,80 @@ async def execute_single_model_run(
     async def predict_one(target: Match) -> None:
         nonlocal written, failed
         try:
-            response = await run_penaltyblog({
-                "operation": "model_fit_predict",
-                "payload": {
-                    "model": model_key,
-                    "goals_home": goals_home,
-                    "goals_away": goals_away,
-                    "teams_home": teams_home,
-                    "teams_away": teams_away,
-                    "prediction": {
-                        "home_team": target.home_team,
-                        "away_team": target.away_team,
-                        "max_goals": max_goals,
+            response = await run_penaltyblog(
+                {
+                    "operation": "model_fit_predict",
+                    "payload": {
+                        "model": model_key,
+                        "goals_home": goals_home,
+                        "goals_away": goals_away,
+                        "teams_home": teams_home,
+                        "teams_away": teams_away,
+                        "prediction": {
+                            "home_team": target.home_team,
+                            "away_team": target.away_team,
+                            "max_goals": max_goals,
+                        },
                     },
-                },
-            })
+                }
+            )
             result = response.get("result", {})
             grid = result.get("prediction")
             if not grid:
                 return
 
-            rows = []
             for market in markets:
-                for entry in extract_market_probabilities(grid, market):
-                    rows.append(ModelPrediction(
-                        run_id=run_id,
-                        match_id=target.id,
-                        market=market,
-                        home_prob=grid.get("homeWin", 0),
-                        draw_prob=grid.get("draw"),
-                        away_prob=grid.get("awayWin", 0),
-                    ))
-            if rows:
-                db.add_all(rows)
-                written += len(rows)
-        except BridgeError as e:
+                probs = extract_market_probabilities(grid, market)
+                if not probs:
+                    continue
+
+                outcome_lookup = {entry["outcome"]: entry["probability"] for entry in probs}
+                market_key = market.lower()
+                if market_key == "1x2":
+                    home_prob = outcome_lookup.get("home", 0)
+                    draw_prob = outcome_lookup.get("draw")
+                    away_prob = outcome_lookup.get("away", 0)
+                    value_home = home_prob
+                    value_draw = draw_prob
+                    value_away = away_prob
+                elif market_key == "btts":
+                    home_prob = outcome_lookup.get("yes", 0)
+                    draw_prob = None
+                    away_prob = outcome_lookup.get("no", 0)
+                    value_home = home_prob
+                    value_draw = None
+                    value_away = away_prob
+                elif market_key in {"ou_2_5", "over_under", "overunder", "totals"}:
+                    home_prob = outcome_lookup.get("over", 0)
+                    draw_prob = None
+                    away_prob = outcome_lookup.get("under", 0)
+                    value_home = home_prob
+                    value_draw = None
+                    value_away = away_prob
+                else:
+                    # Fallback for unexpected market definitions.
+                    home_prob = outcome_lookup.get("home", 0)
+                    draw_prob = outcome_lookup.get("draw")
+                    away_prob = outcome_lookup.get("away", 0)
+                    value_home = home_prob
+                    value_draw = draw_prob
+                    value_away = away_prob
+
+                row = ModelPrediction(
+                    run_id=run_id,
+                    model_type=model_key,
+                    match_id=target.id,
+                    market=market,
+                    home_prob=home_prob,
+                    draw_prob=draw_prob,
+                    away_prob=away_prob,
+                    value_home=value_home,
+                    value_away=value_away,
+                    value_draw=value_draw,
+                )
+                db.add(row)
+                written += 1
+        except BridgeError:
             failed += 1
 
     index = 0
@@ -235,8 +310,16 @@ async def run_single_prediction(
 
     try:
         summary = await execute_single_model_run(
-            db, run.id, model_key, league, markets,
-            sport, training_limit, target_limit, target_mode, max_goals,
+            db,
+            run.id,
+            model_key,
+            league,
+            markets,
+            sport,
+            training_limit,
+            target_limit,
+            target_mode,
+            max_goals,
         )
         run.status = "completed"
         run.completed_at = datetime.now(timezone.utc)

@@ -36,7 +36,7 @@ async def compute_brier_weights(
 
     by_model: dict[str, list[tuple]] = {}
     for mp, hs, aw in rows:
-        by_model.setdefault(PredictionRun.model_type, []).append((mp, hs, aw))
+        by_model.setdefault(mp.model_type, []).append((mp, hs, aw))
 
     for mk in model_keys:
         model_rows = by_model.get(mk, [])
@@ -114,8 +114,16 @@ async def run_ensemble_prediction(
         member_summaries: dict[str, dict] = {}
         for mk in model_keys:
             summary = await execute_single_model_run(
-                db, run.id, mk, league, markets,
-                sport, training_limit, target_limit, target_mode, max_goals,
+                db,
+                run.id,
+                mk,
+                league,
+                markets,
+                sport,
+                training_limit,
+                target_limit,
+                target_mode,
+                max_goals,
             )
             member_summaries[mk] = summary
 
@@ -125,7 +133,7 @@ async def run_ensemble_prediction(
 
         acc: dict[str, dict] = {}
         for r in member_rows:
-            w = weights.get(r.model_type if hasattr(r, 'model_type') else model_keys[0], 0)
+            w = weights.get(r.model_type, 0)
             if w <= 0:
                 continue
             key = f"{r.match_id}|{r.market}"

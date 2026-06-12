@@ -1,7 +1,13 @@
 <script lang="ts">
 	import AccountPanel from '$lib/components/AccountPanel.svelte';
+	import type { BackendLoadStatus } from '$lib/types/backend';
 
 	let { data }: import('./$types').PageProps = $props();
+	const backendStatus = $derived(((data as { backendStatus?: BackendLoadStatus }).backendStatus as BackendLoadStatus | undefined) ?? {
+		state: 'ready',
+		message: null,
+		failedEndpoints: []
+	});
 
 	// SSR-safe: use optional chaining since data may not have page server data during SSR
 	const bankrolls = $derived((data as any)?.bankrolls ?? []);
@@ -14,6 +20,12 @@
 		<h1 class="text-2xl font-extrabold font-sport text-foreground">ACCOUNT</h1>
 		<p class="mt-1 text-muted-foreground">Manage bankrolls, bookmaker accounts, and view transaction history</p>
 	</div>
+
+	{#if backendStatus.state === 'degraded' && backendStatus.message}
+		<div class="border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+			<span class="font-medium">Partial backend data.</span> {backendStatus.message}
+		</div>
+	{/if}
 
 	<!-- SSR: render bankroll cards directly if data available -->
 	{#if bankrolls.length > 0}
@@ -49,16 +61,16 @@
 							<th class="px-4 py-3 text-left">Bookmaker</th>
 							<th class="px-4 py-3 text-left">Account</th>
 							<th class="px-4 py-3 text-left">Balance</th>
-							<th class="px-4 py-3 text-left">Currency</th>
+							<th class="px-4 py-3 text-left">Context</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#each accounts as acct (acct.id)}
 							<tr class="border-b border-border hover:bg-muted">
-								<td class="px-4 py-3 font-medium text-foreground">{acct.bookmaker_name}</td>
+								<td class="px-4 py-3 font-medium text-foreground">{acct.bookmaker}</td>
 								<td class="px-4 py-3 text-muted-foreground">{acct.account_name}</td>
 								<td class="px-4 py-3 font-mono text-football-green">{acct.balance.toFixed(2)}</td>
-								<td class="px-4 py-3 font-mono text-muted-foreground">{acct.currency}</td>
+								<td class="px-4 py-3 font-mono text-muted-foreground">Bankroll-linked</td>
 							</tr>
 						{/each}
 					</tbody>

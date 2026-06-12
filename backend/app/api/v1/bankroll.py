@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
 from app.database import get_db
@@ -82,6 +81,12 @@ async def list_bookmaker_accounts(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    bankroll_stmt = select(Bankroll).where(Bankroll.id == bankroll_id, Bankroll.user_id == user.id)
+    bankroll_result = await db.execute(bankroll_stmt)
+    bankroll = bankroll_result.scalar_one_or_none()
+    if not bankroll:
+        raise HTTPException(status_code=404, detail="Bankroll not found")
+
     stmt = select(BookmakerAccount).where(BookmakerAccount.bankroll_id == bankroll_id)
     result = await db.execute(stmt)
     return result.scalars().all()
@@ -118,6 +123,12 @@ async def list_ledger(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    bankroll_stmt = select(Bankroll).where(Bankroll.id == bankroll_id, Bankroll.user_id == user.id)
+    bankroll_result = await db.execute(bankroll_stmt)
+    bankroll = bankroll_result.scalar_one_or_none()
+    if not bankroll:
+        raise HTTPException(status_code=404, detail="Bankroll not found")
+
     stmt = (
         select(LedgerEntry)
         .where(LedgerEntry.bankroll_id == bankroll_id)

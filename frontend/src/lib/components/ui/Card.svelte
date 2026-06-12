@@ -32,9 +32,11 @@
 		prediction: 'border-t-2 border-t-football-gold'
 	};
 
-let interactiveClass = interactive
-	? 'cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.01] motion-safe:hover:scale-[1.01] motion-reduce:hover:scale-100'
-	: '';
+let interactiveClass = $derived(
+	interactive
+		? 'cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.01] motion-safe:hover:scale-[1.01] motion-reduce:hover:scale-100'
+		: ''
+);
 
 	let classes = $derived(
 		cn(variantClasses[variant], interactiveClass, className)

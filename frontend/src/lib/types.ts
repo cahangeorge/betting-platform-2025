@@ -45,6 +45,7 @@ export interface Match {
 	possession_away?: number;
 	shots_home?: number;
 	shots_away?: number;
+	live_value_candidates?: LiveValueCandidate[];
 }
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled';
@@ -57,6 +58,20 @@ export interface Odd {
 	draw_odds: number | null;
 	away_odds: number;
 	updated_at: string;
+}
+
+export interface LiveValueCandidate {
+	market: string;
+	selection: string;
+	odds: number;
+	model_probability: number;
+	implied_probability: number;
+	edge: number;
+	expected_value: number;
+	spread: number | null;
+	source: string;
+	prediction_age_seconds: number | null;
+	confidence_band: 'low' | 'medium' | 'high';
 }
 
 export interface MatchFilter {
@@ -140,7 +155,8 @@ export type TicketType = 'single' | 'accumulator' | 'system';
 export interface Ticket {
 	id: number;
 	reference: string;
-	type: TicketType;
+	type?: TicketType;
+	ticket_type?: TicketType;
 	status: TicketStatus;
 	stake: number;
 	total_odds: number;
@@ -154,6 +170,7 @@ export interface Ticket {
 
 export interface TicketLeg {
 	id: number;
+	model_prediction_id?: number | null;
 	match_id: number;
 	market: string;
 	selection: string;
@@ -165,12 +182,14 @@ export interface TicketLeg {
 export interface PlaceBetRequest {
 	legs: {
 		match_id: number;
+		model_prediction_id?: number;
 		market: string;
 		selection: string;
 		odds: number;
 	}[];
 	stake: number;
-	type: TicketType;
+	type?: TicketType;
+	ticket_type?: TicketType;
 	bankroll_id: number;
 }
 
@@ -204,18 +223,17 @@ export interface BankrollCreateRequest {
 
 export interface BookmakerAccount {
 	id: number;
-	bookmaker_name: string;
+	bookmaker: string;
 	account_name: string;
 	balance: number;
-	currency: string;
 	bankroll_id: number;
+	created_at?: string;
 }
 
 export interface BookmakerAccountCreateRequest {
-	bookmaker_name: string;
+	bookmaker: string;
 	account_name: string;
 	balance?: number;
-	currency?: string;
 	bankroll_id: number;
 }
 
@@ -237,18 +255,19 @@ export type JobType = 'scrape_odds' | 'scrape_results' | 'scrape_league' | 'sync
 
 export interface ScrapeJob {
 	id: number;
-	type: JobType;
+	job_type: string;
 	status: JobStatus;
-	params: Record<string, unknown>;
-	progress: number;
+	league?: string | null;
+	params: Record<string, unknown> | null;
 	created_at: string;
+	started_at?: string | null;
 	completed_at: string | null;
 	error: string | null;
-	result: Record<string, unknown> | null;
+	output?: string | null;
 }
 
 export interface ScrapeJobCreateRequest {
-	type: JobType;
+	job_type: JobType;
 	params?: Record<string, unknown>;
 }
 

@@ -1,5 +1,6 @@
-from contextlib import asynccontextmanager
 import re
+import warnings
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request, Response
@@ -7,6 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.v1.router import v1_router
 from app.config import get_settings
+from app.services.python_bridge import bridge_runtime_summary, validate_bridge_runtime
 
 settings = get_settings()
 
@@ -56,8 +58,12 @@ class FlexibleCORSMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if settings.jwt_secret in ("dev-secret-change-in-production", "dev-jwt-secret-change-in-production"):
-        import warnings
         warnings.warn("BET_JWT_SECRET is not set — using insecure dev fallback. Set BET_JWT_SECRET in production.")
+
+    for issue in validate_bridge_runtime():
+        warnings.warn(f"Bridge runtime prerequisite issue: {issue}")
+
+    app.state.bridge_runtime = bridge_runtime_summary()
     yield
 
 
@@ -79,4 +85,9 @@ app.include_router(v1_router)
 
 @app.get("/health")
 async def health():
+    return {"status": "ok", "app": settings.app_name}
+
+
+@app.get("/api/v1/health")
+async def api_health():
     return {"status": "ok", "app": settings.app_name}

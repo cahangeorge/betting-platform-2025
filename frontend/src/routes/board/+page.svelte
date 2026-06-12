@@ -7,6 +7,7 @@
 	import MatchCardSkeleton from '$lib/components/MatchCardSkeleton.svelte';
 	import OddsTable from '$lib/components/OddsTable.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
 	import Loading from '$lib/components/Loading.svelte';
 	import Tabs from '$lib/components/ui/Tabs.svelte';
 	import { RefreshCw } from 'lucide-svelte';
@@ -20,12 +21,15 @@
 		};
 	} = $props();
 
-	const initialMatches = data.matches;
-	let matches = $state<Match[]>(initialMatches);
+	let matches = $state<Match[]>([]);
 	let loading = $state(false);
 	let error = $state('');
 	let activeTab = $state('grid');
 	let pollInterval = $state<ReturnType<typeof setInterval> | null>(null);
+
+	$effect(() => {
+		matches = data.matches;
+	});
 
 	async function refresh() {
 		loading = true;
@@ -58,7 +62,51 @@
 <div class="space-y-4" transition:fade={{ duration: 200 }}>
 	<div>
 		<h1 class="text-2xl font-extrabold font-sport text-foreground">ODDS BOARD</h1>
-		<p class="mt-1 text-muted-foreground">Live odds ticker and match board</p>
+		<p class="mt-1 text-muted-foreground">Public match discovery with live odds snapshots and upcoming fixtures</p>
+	</div>
+
+	<Card>
+		<div class="flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
+			<div class="space-y-1">
+				<p class="text-xs font-semibold uppercase tracking-[0.2em] text-football-green">Public Preview</p>
+				<h2 class="text-lg font-semibold text-foreground">Use the board to browse. Sign in to scrape, predict, and place tickets.</h2>
+				<p class="text-sm text-muted-foreground">
+					Authenticated users get the full workflow on the dashboard: scrape data, run models, build a slip, and place tickets from one shell.
+				</p>
+			</div>
+			<div class="flex flex-wrap gap-2">
+				<a href="/login">
+					<Button variant="primary">Sign In</Button>
+				</a>
+				<a href="/signup">
+					<Button variant="secondary">Create Account</Button>
+				</a>
+			</div>
+		</div>
+	</Card>
+
+	<div class="grid gap-4 md:grid-cols-3">
+		<Card>
+			<div class="space-y-2 p-4">
+				<p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">1. Scrape</p>
+				<h3 class="font-semibold text-foreground">Collect fresh markets and match history</h3>
+				<p class="text-sm text-muted-foreground">Run the ingestion jobs that populate the rest of the product with real fixtures and odds.</p>
+			</div>
+		</Card>
+		<Card>
+			<div class="space-y-2 p-4">
+				<p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">2. Predict</p>
+				<h3 class="font-semibold text-foreground">Generate selections with model context</h3>
+				<p class="text-sm text-muted-foreground">Filter leagues, run strategies, and add the highest-conviction predictions directly to your bet slip.</p>
+			</div>
+		</Card>
+		<Card>
+			<div class="space-y-2 p-4">
+				<p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">3. Ticket</p>
+				<h3 class="font-semibold text-foreground">Review selections and place a real ticket</h3>
+				<p class="text-sm text-muted-foreground">Use bankroll-backed ticket review instead of manual copy/paste across disconnected screens.</p>
+			</div>
+		</Card>
 	</div>
 
 	<Ticker matches={upcomingMatches} />

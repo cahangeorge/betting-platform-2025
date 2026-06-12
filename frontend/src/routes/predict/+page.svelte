@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import { fade, slide } from 'svelte/transition';
+	import { betslip, createBetslipLeg } from '$lib/stores/betslip';
+	import BetslipReviewCallout from '$lib/components/BetslipReviewCallout.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
@@ -63,6 +66,7 @@
 	let runProgress = $state(0);
 	let runError = $state('');
 	let runSuccess = $state('');
+	let runWarning = $state('');
 	let autoPredict = $state(false);
 	let autoInterval = $state('24');
 	let autoIntervalUnit = $state('Hours');
@@ -74,6 +78,13 @@
 	let resultPollTimer: ReturnType<typeof setInterval> | null = null;
 
 	// --- Derived ---
+	const scopedMatchId = $derived.by(() => {
+		const raw = $page.url.searchParams.get('match');
+		if (!raw) return null;
+		const parsed = Number.parseInt(raw, 10);
+		return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+	});
+
 	const filteredLeagues = $derived(
 		selectedCountries.length === 0
 			? allLeagues
@@ -184,6 +195,13 @@
 		}
 	}
 
+	type StrategyRunApiResponse = {
+		run_id: number;
+		status: string;
+		matches_count?: number;
+		error?: string | null;
+	};
+
 	async function runPredictions() {
 		if (selectedStrategyIds.length === 0 || selectedMarkets.length === 0) {
 			runError = 'Select at least one strategy and one market';
@@ -193,7 +211,9 @@
 		running = true;
 		runError = '';
 		runSuccess = '';
+		runWarning = '';
 		runProgress = 0;
+		const warnings: string[] = [];
 
 		const progressInterval = setInterval(() => {
 			runProgress = Math.min(runProgress + 5, 90);
@@ -206,7 +226,7 @@
 					headers: { 'Content-Type': 'application/json' },
 					credentials: 'include',
 					body: JSON.stringify({
-						match_ids: [],
+						match_ids: scopedMatchId !== null ? [scopedMatchId] : [],
 						markets: selectedMarkets,
 						filters: {
 							countries: selectedCountries,
@@ -221,14 +241,27 @@
 					const err = await res.json().catch(() => ({ detail: 'Run failed' }));
 					throw new Error(err.detail || `HTTP ${res.status}`);
 				}
+
+				const payload = (await res.json()) as StrategyRunApiResponse;
+				if (payload.status === 'failed') {
+					throw new Error(payload.error || 'Prediction run failed');
+				}
+				if (payload.status === 'no_matches') {
+					throw new Error('No matches matched the selected prediction filters');
+				}
+				if (payload.status === 'partial') {
+					warnings.push(payload.error || 'Prediction run completed partially');
+				}
 			}
 
 			clearInterval(progressInterval);
 			runProgress = 100;
-			runSuccess = 'Predictions completed successfully';
+			runSuccess = warnings.length > 0 ? 'Predictions completed with warnings' : 'Predictions completed successfully';
+			runWarning = warnings.join(' ');
 			await fetchResults();
 			setTimeout(() => {
 				runSuccess = '';
+				runWarning = '';
 				runProgress = 0;
 			}, 4000);
 		} catch (err) {
@@ -362,6 +395,20 @@
 		return edge > 0 ? 'text-football-green' : 'text-football-red';
 	}
 
+	function addPredictionToBetslip(result: StrategyRunResult) {
+		betslip.addLeg(
+			createBetslipLeg({
+				matchId: result.match_id,
+				matchName: `${result.match_home} vs ${result.match_away}`,
+				market: result.market,
+				selection: result.predicted,
+				odds: result.odds,
+				league: result.league,
+				source: 'prediction'
+			})
+		);
+	}
+
 	onMount(() => {
 		fetchCatalog();
 		fetchStrategies();
@@ -395,6 +442,16 @@
 		<h1 class="text-2xl font-extrabold font-sport text-foreground">PREDICTIONS</h1>
 		<p class="mt-1 text-muted-foreground">Run AI prediction models, view results, and analyze strategies</p>
 	</div>
+
+	<BetslipReviewCallout label="Prediction selections are ready for final ticket review." />
+
+	{#if scopedMatchId !== null}
+		<div class="flex flex-wrap items-center gap-2 border border-football-gold/30 bg-football-gold/10 px-3 py-2 text-sm text-foreground">
+			<Badge variant="warning">Match #{scopedMatchId}</Badge>
+			<span class="text-muted-foreground">Predictions will run only for the selected dashboard match.</span>
+			<a href="/predict" class="ml-auto text-xs font-medium text-football-blue hover:text-football-gold">Clear</a>
+		</div>
+	{/if}
 
 	<!-- Section 1: Data Selectors -->
 	<Card title="Data Selection" variant="prediction">
@@ -490,12 +547,12 @@
 				<p class="text-sm font-medium text-foreground mb-3">Date Range</p>
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<label class="text-xs text-muted-foreground mb-1 block">From</label>
-						<Input type="date" bind:value={dateFrom} />
+						<label for="predict-date-from" class="text-xs text-muted-foreground mb-1 block">From</label>
+						<Input id="predict-date-from" type="date" bind:value={dateFrom} />
 					</div>
 					<div>
-						<label class="text-xs text-muted-foreground mb-1 block">To</label>
-						<Input type="date" bind:value={dateTo} />
+						<label for="predict-date-to" class="text-xs text-muted-foreground mb-1 block">To</label>
+						<Input id="predict-date-to" type="date" bind:value={dateTo} />
 					</div>
 				</div>
 			</div>
@@ -608,6 +665,12 @@
 			</div>
 		{/if}
 
+		{#if runWarning}
+			<div class="p-3 text-sm bg-football-gold/10 border border-football-gold/30 text-football-gold" transition:slide={{ duration: 200 }}>
+				{runWarning}
+			</div>
+		{/if}
+
 		{#if runError}
 			<div class="p-3 text-sm bg-destructive/10 border border-destructive/30 text-destructive" transition:slide={{ duration: 200 }}>
 				{runError}
@@ -675,6 +738,7 @@
 									<th class="px-3 py-2 text-right">Probability</th>
 									<th class="px-3 py-2 text-right">Confidence</th>
 									<th class="px-3 py-2 text-right">Edge</th>
+									<th class="px-3 py-2 text-right">Action</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -705,6 +769,11 @@
 												{result.edge > 0 ? '+' : ''}{result.edge.toFixed(2)}%
 											</span>
 										</td>
+										<td class="px-3 py-2.5 text-right">
+											<Button variant="secondary" size="sm" onclick={() => addPredictionToBetslip(result)}>
+												Add
+											</Button>
+										</td>
 									</tr>
 								{/each}
 							</tbody>
@@ -723,6 +792,7 @@
 								<th class="px-3 py-2 text-right">Probability</th>
 								<th class="px-3 py-2 text-right">Confidence</th>
 								<th class="px-3 py-2 text-right">Edge</th>
+								<th class="px-3 py-2 text-right">Action</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -752,6 +822,11 @@
 										<span class={cn('font-mono text-xs font-semibold', edgeColor(result.edge))}>
 											{result.edge > 0 ? '+' : ''}{result.edge.toFixed(2)}%
 										</span>
+									</td>
+									<td class="px-3 py-2.5 text-right">
+										<Button variant="secondary" size="sm" onclick={() => addPredictionToBetslip(result)}>
+											Add
+										</Button>
 									</td>
 								</tr>
 							{/each}
@@ -797,8 +872,9 @@
 				/>
 
 				<div>
-					<label class="text-sm font-medium leading-none mb-1.5 block">Description</label>
+					<label for="strategy-description" class="text-sm font-medium leading-none mb-1.5 block">Description</label>
 					<textarea
+						id="strategy-description"
 						bind:value={newStrategyDescription}
 						placeholder="Optional description of the strategy"
 						rows="2"
@@ -807,8 +883,9 @@
 				</div>
 
 				<div>
-					<label class="text-sm font-medium leading-none mb-1.5 block">Parameters (JSON)</label>
+					<label for="strategy-params" class="text-sm font-medium leading-none mb-1.5 block">Parameters (JSON)</label>
 					<textarea
+						id="strategy-params"
 						bind:value={newStrategyParams}
 						placeholder={'{"rho": -0.13, "home_advantage": 0.25}'}
 						rows="3"

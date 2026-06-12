@@ -8,6 +8,9 @@ const config = {
 		adapter: adapter(),
 		csrf: {
 			trustedOrigins: []
+		},
+		version: {
+			pollInterval: 300000
 		}
 	}
 };

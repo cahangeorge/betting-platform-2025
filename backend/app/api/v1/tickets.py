@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
 from app.database import get_db
-from app.models.ticket import BetPlacement, Settlement, Ticket, TicketBatch, TicketLeg
+from app.models.ticket import Ticket, TicketBatch
 from app.models.user import User
 from app.schemas.ticket import (
     BetPlacementResponse,
@@ -13,7 +13,6 @@ from app.schemas.ticket import (
     TicketBatchResponse,
     TicketCreateRequest,
     TicketDetailResponse,
-    TicketLegResponse,
     TicketResponse,
 )
 from app.services.ticket_engine import create_ticket, place_bet, settle_ticket
@@ -43,14 +42,19 @@ async def create_new_ticket(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    ticket = await create_ticket(
-        db=db,
-        user_id=user.id,
-        ticket_type=body.ticket_type,
-        stake=body.stake,
-        bankroll_id=body.bankroll_id,
-        legs_data=body.legs,
-    )
+    try:
+        ticket = await create_ticket(
+            db=db,
+            user_id=user.id,
+            ticket_type=body.ticket_type,
+            stake=body.stake,
+            bankroll_id=body.bankroll_id,
+            legs_data=body.legs,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return ticket
 
 

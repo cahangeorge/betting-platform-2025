@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, case, cast, String
+from sqlalchemy import String, case, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
@@ -60,9 +60,7 @@ async def get_pnl(
             cast(trunc, String).label("date"),
             func.coalesce(func.sum(LedgerEntry.amount), 0.0).label("pnl"),
             func.count(LedgerEntry.id).label("bets_count"),
-            func.sum(
-                case((LedgerEntry.amount > 0, 1), else_=0)
-            ).label("wins"),
+            func.sum(case((LedgerEntry.amount > 0, 1), else_=0)).label("wins"),
         )
         .where(
             LedgerEntry.bankroll_id.in_(user_bankrolls),
@@ -103,9 +101,7 @@ async def get_pnl_by_league(
             Match.competition.label("league"),
             func.coalesce(func.sum(LedgerEntry.amount), 0.0).label("total_pnl"),
             func.count(LedgerEntry.id).label("bets_count"),
-            func.sum(
-                case((LedgerEntry.amount > 0, 1), else_=0)
-            ).label("wins"),
+            func.sum(case((LedgerEntry.amount > 0, 1), else_=0)).label("wins"),
         )
         .join(Ticket, LedgerEntry.ticket_id == Ticket.id)
         .join(TicketLeg, TicketLeg.ticket_id == Ticket.id)
@@ -139,23 +135,22 @@ async def get_pnl_by_model(
     user: User = Depends(get_current_user),
 ):
     user_bankrolls = select(Bankroll.id).where(Bankroll.user_id == user.id).scalar_subquery()
+    model_bucket = func.coalesce(ModelPrediction.model_type, "manual")
 
     stmt = (
         select(
-            ModelPrediction.market.label("model_type"),
+            model_bucket.label("model_type"),
             func.coalesce(func.sum(LedgerEntry.amount), 0.0).label("total_pnl"),
             func.count(LedgerEntry.id).label("bets_count"),
-            func.sum(
-                case((LedgerEntry.amount > 0, 1), else_=0)
-            ).label("wins"),
+            func.sum(case((LedgerEntry.amount > 0, 1), else_=0)).label("wins"),
         )
         .join(Ticket, LedgerEntry.ticket_id == Ticket.id)
         .join(TicketLeg, TicketLeg.ticket_id == Ticket.id)
-        .join(ModelPrediction, ModelPrediction.match_id == TicketLeg.match_id)
+        .outerjoin(ModelPrediction, ModelPrediction.id == TicketLeg.model_prediction_id)
         .where(
             LedgerEntry.bankroll_id.in_(user_bankrolls),
         )
-        .group_by(ModelPrediction.market)
+        .group_by(model_bucket)
         .order_by(func.sum(LedgerEntry.amount).desc())
     )
 

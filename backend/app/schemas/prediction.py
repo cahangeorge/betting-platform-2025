@@ -8,6 +8,7 @@ class ModelPredictionResponse(BaseModel):
 
     id: int
     run_id: int
+    model_type: str
     match_id: int
     market: str
     home_prob: float
@@ -87,3 +88,27 @@ class RunEnsembleRequest(BaseModel):
 class PredictionCatalogResponse(BaseModel):
     models: list[dict]
     markets: list[str]
+
+
+class ValueBetItem(BaseModel):
+    id: int
+    match_id: int
+    league: str | None = None
+    home_team: str
+    away_team: str
+    kickoff: str | None = None
+    market: str
+    selection: str
+    model_prob: float
+    odds: float
+    edge: float
+    model_type: str
+    confidence: float
+    source: str = "prediction"
+
+
+class ValueBetResponse(BaseModel):
+    items: list[ValueBetItem]
+    source: str = "prediction"
+    is_demo: bool = False
+    generated_at: str

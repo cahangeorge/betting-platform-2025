@@ -22,13 +22,21 @@ class Bankroll(Base):
     initial_balance: Mapped[float] = mapped_column(Float, default=1000.0, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="GBP", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="bankrolls")
-    bookmaker_accounts: Mapped[list["BookmakerAccount"]] = relationship("BookmakerAccount", back_populates="bankroll", cascade="all, delete-orphan")
-    ledger: Mapped[list["LedgerEntry"]] = relationship("LedgerEntry", back_populates="bankroll", cascade="all, delete-orphan")
+    bookmaker_accounts: Mapped[list["BookmakerAccount"]] = relationship(
+        "BookmakerAccount", back_populates="bankroll", cascade="all, delete-orphan"
+    )
+    ledger: Mapped[list["LedgerEntry"]] = relationship(
+        "LedgerEntry", back_populates="bankroll", cascade="all, delete-orphan"
+    )
     tickets: Mapped[list["Ticket"]] = relationship("Ticket", back_populates="bankroll", cascade="all, delete-orphan")
-    ticket_batches: Mapped[list["TicketBatch"]] = relationship("TicketBatch", back_populates="bankroll", cascade="all, delete-orphan")
+    ticket_batches: Mapped[list["TicketBatch"]] = relationship(
+        "TicketBatch", back_populates="bankroll", cascade="all, delete-orphan"
+    )
 
 
 class BookmakerAccount(Base):
@@ -42,7 +50,9 @@ class BookmakerAccount(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     bankroll: Mapped["Bankroll"] = relationship("Bankroll", back_populates="bookmaker_accounts")
-    placements: Mapped[list["BetPlacement"]] = relationship("BetPlacement", back_populates="bookmaker_account", cascade="all, delete-orphan")
+    placements: Mapped[list["BetPlacement"]] = relationship(
+        "BetPlacement", back_populates="bookmaker_account", cascade="all, delete-orphan"
+    )
 
 
 class LedgerEntry(Base):
@@ -51,7 +61,9 @@ class LedgerEntry(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     bankroll_id: Mapped[int] = mapped_column(ForeignKey("bankrolls.id", ondelete="CASCADE"), nullable=False)
     ticket_id: Mapped[int | None] = mapped_column(ForeignKey("tickets.id", ondelete="SET NULL"), nullable=True)
-    placement_id: Mapped[int | None] = mapped_column(ForeignKey("bet_placements.id", ondelete="SET NULL"), nullable=True)
+    placement_id: Mapped[int | None] = mapped_column(
+        ForeignKey("bet_placements.id", ondelete="SET NULL"), nullable=True
+    )
     entry_type: Mapped[str] = mapped_column(String(50), nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     balance_after: Mapped[float] = mapped_column(Float, nullable=False)

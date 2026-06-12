@@ -1,8 +1,4 @@
-from collections.abc import AsyncGenerator
-
 from fastapi import Cookie, Depends, HTTPException, Request, status
-from jose import JWTError
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db

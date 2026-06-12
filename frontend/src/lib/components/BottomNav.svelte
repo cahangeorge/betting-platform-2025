@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { Home, BarChart3, Ticket, Database, User } from 'lucide-svelte';
+	import { Home, BarChart3, Ticket, Download, User } from 'lucide-svelte';
 	import { cn } from '$lib/utils';
 
-	const tabs = [
-		{ href: '/', label: 'Home', icon: Home },
+	const primaryTabs = [
+		{ href: '/', label: 'Dashboard', icon: Home },
+		{ href: '/scrape', label: 'Scrape', icon: Download },
 		{ href: '/predict', label: 'Predict', icon: BarChart3 },
 		{ href: '/tickets', label: 'Tickets', icon: Ticket },
-		{ href: '/data', label: 'Data', icon: Database },
 		{ href: '/account', label: 'Account', icon: User }
 	];
 
@@ -19,11 +19,11 @@
 
 <nav
 	class="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-border bg-background/80 backdrop-blur-xl"
-	aria-label="Main navigation"
+	aria-label="Primary workflow navigation"
 	style="padding-bottom: env(safe-area-inset-bottom, 0px);"
 >
 	<div class="flex items-center justify-around h-16">
-		{#each tabs as tab (tab.href)}
+		{#each primaryTabs as tab (tab.href)}
 			<a
 				href={tab.href}
 				aria-label={tab.label}

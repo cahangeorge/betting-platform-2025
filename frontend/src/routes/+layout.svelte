@@ -1,14 +1,19 @@
 <script lang="ts">
 	import '../app.css';
-	import { navigating } from '$app/stores';
-	import { fade, slide } from 'svelte/transition';
+	import { navigating, page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import Sidebar from '$lib/components/Sidebar.svelte';
-	import Navbar from '$lib/components/Navbar.svelte';
+	import { fade, slide } from 'svelte/transition';
 	import BetSlipDrawer from '$lib/components/BetSlipDrawer.svelte';
-	import BottomNav from '$lib/components/BottomNav.svelte';
 	import BetslipFAB from '$lib/components/BetslipFAB.svelte';
+	import BottomNav from '$lib/components/BottomNav.svelte';
+	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import Loading from '$lib/components/Loading.svelte';
+	import Navbar from '$lib/components/Navbar.svelte';
+	import PWAConnectivityBanner from '$lib/components/PWAConnectivityBanner.svelte';
+	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
+	import PWAUpdateBanner from '$lib/components/PWAUpdateBanner.svelte';
+	import Sidebar from '$lib/components/Sidebar.svelte';
+	import { betslipHasLegs } from '$lib/stores/betslip';
 	import { liveSocket } from '$lib/stores/liveSocket';
 
 	let {
@@ -23,18 +28,23 @@
 
 	let sidebarOpen = $state(false);
 	let betslipOpen = $state(false);
+	let commandPaletteOpen = $state(false);
+	let isNavigating = $state(false);
+	let prevUrl = $state('');
+
+	const shelllessRoutes = ['/login', '/signup', '/about', '/board'];
+	const useAppShell = $derived.by(
+		() => !shelllessRoutes.some((route) => $page.url.pathname.startsWith(route))
+	);
 
 	function toggleSidebar() {
 		sidebarOpen = !sidebarOpen;
 	}
 
-	let isNavigating = $state(false);
-
-	let prevUrl = $state('');
 	$effect(() => {
 		const unsub = navigating.subscribe((nav) => {
 			isNavigating = !!nav;
-			if (nav && nav.to && nav.to.url.pathname !== prevUrl) {
+			if (nav?.to && nav.to.url.pathname !== prevUrl) {
 				sidebarOpen = false;
 				betslipOpen = false;
 				prevUrl = nav.to.url.pathname;
@@ -43,7 +53,6 @@
 		return unsub;
 	});
 
-	// Connect to live WebSocket on mount
 	onMount(() => {
 		liveSocket.connect();
 		return () => {
@@ -52,92 +61,111 @@
 	});
 </script>
 
-<!-- Skip to main content -->
 <a href="#main-content" class="sr-only-focusable">Skip to main content</a>
 
 <div class="min-h-screen bg-background">
-	<Navbar user={data.user} onToggleSidebar={toggleSidebar} />
+	<Navbar
+		user={data.user}
+		onToggleSidebar={toggleSidebar}
+		onOpenCommandPalette={() => (commandPaletteOpen = true)}
+	/>
 
-	<!-- Desktop: 3-column layout -->
-	<div class="hidden lg:grid lg:grid-cols-[220px_1fr_320px] pt-16 min-h-screen">
-		<!-- Sidebar: fixed left -->
-		<aside class="relative" role="complementary" aria-label="Navigation sidebar">
-			<div class="fixed top-16 left-0 z-30 w-[220px] h-[calc(100vh-64px)]">
-				<Sidebar bind:open={sidebarOpen} user={data.user} />
-			</div>
-		</aside>
-
-		<!-- Main content -->
-		<main id="main-content" class="min-h-[calc(100vh-4rem)]" role="main">
-			<div class="p-4 lg:p-6 max-w-none">
-				{#if isNavigating}
-					<div class="flex items-center justify-center py-20" transition:fade={{ duration: 150 }}>
-						<Loading message="Loading..." />
-					</div>
-				{:else}
-					<div transition:fade={{ duration: 200, delay: 50 }}>
-						{@render children()}
-					</div>
-				{/if}
-			</div>
-		</main>
-
-		<!-- Betslip: sticky right panel -->
-		<aside class="relative" role="complementary" aria-label="Bet slip">
-			<div class="sticky top-16 scroll-thin h-[calc(100vh-64px)] overflow-y-auto border-l border-border">
-				<BetSlipDrawer />
-			</div>
-		</aside>
+	<div class="pointer-events-none fixed inset-x-0 top-18 z-50 flex justify-center px-4">
+		<div class="pointer-events-auto flex w-full max-w-2xl flex-col gap-2">
+			<PWAUpdateBanner />
+			<PWAInstallPrompt />
+			<PWAConnectivityBanner />
+		</div>
 	</div>
 
-	<!-- Tablet/Mobile: single column layout -->
-	<div class="lg:hidden pt-16 pb-16">
-		<!-- Mobile sidebar overlay -->
-		{#if sidebarOpen}
-			<Sidebar bind:open={sidebarOpen} user={data.user} />
-		{/if}
+	{#if useAppShell}
+		<div class="hidden min-h-screen grid-cols-[220px_1fr_320px] pt-16 lg:grid">
+			<aside class="relative" aria-label="Navigation sidebar">
+				<div class="fixed left-0 top-16 z-30 h-[calc(100vh-64px)] w-[220px]">
+					<Sidebar bind:open={sidebarOpen} user={data.user} />
+				</div>
+			</aside>
 
-		<!-- Main content -->
-		<main id="main-content-mobile" class="min-h-[calc(100vh-4rem)]" role="main">
-			<div class="p-4 max-w-none">
-				{#if isNavigating}
-					<div class="flex items-center justify-center py-20" transition:fade={{ duration: 150 }}>
-						<Loading message="Loading..." />
-					</div>
-				{:else}
-					<div transition:fade={{ duration: 200, delay: 50 }}>
-						{@render children()}
-					</div>
-				{/if}
-			</div>
-		</main>
+			<main id="main-content" class="min-h-[calc(100vh-4rem)]">
+				<div class="max-w-none p-4 lg:p-6">
+					{#if isNavigating}
+						<div class="flex items-center justify-center py-20" transition:fade={{ duration: 150 }}>
+							<Loading message="Loading..." />
+						</div>
+					{:else}
+						<div transition:fade={{ duration: 200, delay: 50 }}>
+							{@render children()}
+						</div>
+					{/if}
+				</div>
+			</main>
 
-		<!-- Betslip FAB (mobile only) -->
-		<BetslipFAB count={0} onclick={() => (betslipOpen = true)} />
+			<aside class="relative" aria-label="Bet slip">
+				<div class="sticky top-16 h-[calc(100vh-64px)] overflow-y-auto border-l border-border scroll-thin">
+					<BetSlipDrawer />
+				</div>
+			</aside>
+		</div>
 
-		<!-- Betslip bottom sheet (mobile/tablet) -->
-		{#if betslipOpen}
-			<div class="fixed inset-0 z-50 lg:hidden" transition:fade={{ duration: 150 }}>
-				<!-- Backdrop -->
-				<button
-					class="absolute inset-0 bg-black/50 backdrop-blur-sm"
-					onclick={() => (betslipOpen = false)}
-					aria-label="Close bet slip"
-				></button>
-				<!-- Bottom sheet -->
-				<div
-					class="absolute bottom-0 left-0 right-0 max-h-[85vh] bg-card border-t border-border -2xl overflow-hidden"
-					style="padding-bottom: env(safe-area-inset-bottom, 0px);"
-					transition:slide={{ duration: 250, axis: 'y' }}
-				>
-					<div class="h-full overflow-y-auto scroll-thin">
-						<BetSlipDrawer bind:open={betslipOpen} />
+		<div class="pb-16 pt-16 lg:hidden">
+			{#if sidebarOpen}
+				<Sidebar bind:open={sidebarOpen} user={data.user} />
+			{/if}
+
+			<main id="main-content-mobile" class="min-h-[calc(100vh-4rem)]">
+				<div class="max-w-none p-4">
+					{#if isNavigating}
+						<div class="flex items-center justify-center py-20" transition:fade={{ duration: 150 }}>
+							<Loading message="Loading..." />
+						</div>
+					{:else}
+						<div transition:fade={{ duration: 200, delay: 50 }}>
+							{@render children()}
+						</div>
+					{/if}
+				</div>
+			</main>
+
+			{#if $betslipHasLegs}
+				<BetslipFAB onclick={() => (betslipOpen = true)} />
+			{/if}
+
+			{#if betslipOpen}
+				<div class="fixed inset-0 z-50 lg:hidden" transition:fade={{ duration: 150 }}>
+					<button
+						class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+						onclick={() => (betslipOpen = false)}
+						aria-label="Close bet slip"
+					></button>
+					<div
+						class="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-hidden border-t border-border bg-card"
+						style="padding-bottom: env(safe-area-inset-bottom, 0px);"
+						transition:slide={{ duration: 250, axis: 'y' }}
+					>
+						<div class="h-full overflow-y-auto scroll-thin">
+							<BetSlipDrawer bind:open={betslipOpen} />
+						</div>
 					</div>
 				</div>
-			</div>
-		{/if}
-	</div>
+			{/if}
 
-	<!-- Bottom nav (mobile only) -->
-	<BottomNav />
+			<BottomNav />
+		</div>
+	{:else}
+		<main id="main-content" class="min-h-[calc(100vh-4rem)] pt-16">
+			<div class="mx-auto w-full max-w-7xl p-4 lg:p-6">
+				{#if isNavigating}
+					<div class="flex items-center justify-center py-20" transition:fade={{ duration: 150 }}>
+						<Loading message="Loading..." />
+					</div>
+				{:else}
+					<div transition:fade={{ duration: 200, delay: 50 }}>
+						{@render children()}
+					</div>
+				{/if}
+			</div>
+		</main>
+	{/if}
 </div>
+
+<CommandPalette bind:open={commandPaletteOpen} />

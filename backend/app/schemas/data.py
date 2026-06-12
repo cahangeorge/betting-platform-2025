@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class ScrapeJobResponse(BaseModel):
@@ -18,7 +18,7 @@ class ScrapeJobResponse(BaseModel):
 
 
 class ScrapeJobCreateRequest(BaseModel):
-    job_type: str
+    job_type: str = Field(validation_alias=AliasChoices("job_type", "type"))
     league: str | None = None
     params: dict | None = None
 

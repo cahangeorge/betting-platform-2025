@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import AuthForm from '$lib/components/AuthForm.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 
 	function onSignupSuccess() {
-		window.location.href = '/';
+		goto('/')
 	}
 </script>
 

@@ -8,6 +8,30 @@ import type {
 	BacktestResult
 } from '$lib/types';
 
+type ValueBetItem = {
+	id: number;
+	match_id: number;
+	league: string | null;
+	home_team: string;
+	away_team: string;
+	kickoff: string | null;
+	market: string;
+	selection: string;
+	model_prob: number;
+	odds: number;
+	edge: number;
+	model_type: string;
+	confidence: number;
+	source: string;
+};
+
+type ValueBetFeed = {
+	items: ValueBetItem[];
+	source: string;
+	is_demo: boolean;
+	generated_at: string;
+};
+
 class PredictionsApi extends ApiClient {
 	async getModels(): Promise<PredictionModel[]> {
 		return this.get<PredictionModel[]>('/api/v1/predictions/catalog');
@@ -41,23 +65,21 @@ class PredictionsApi extends ApiClient {
 		};
 	}
 
-	async getValueBets(fetchFn?: typeof fetch): Promise<Array<{
-		id: number;
-		match_id: number;
-		league: string;
-		home_team: string;
-		away_team: string;
-		kickoff: string;
-		market: string;
-		selection: string;
-		model_prob: number;
-		odds: number;
-		edge: number;
-		model_type: string;
-		confidence: number;
-	}>> {
-		// Backend doesn't have a value-bets endpoint yet — return empty
-		return [];
+	async getValueBets(fetchFn?: typeof fetch): Promise<ValueBetFeed> {
+		const response = await this.get<ValueBetFeed | ValueBetItem[]>(
+			'/api/v1/predictions/value-bets',
+			undefined,
+			fetchFn
+		);
+		if (Array.isArray(response)) {
+			return {
+				items: response,
+				source: 'prediction',
+				is_demo: false,
+				generated_at: new Date().toISOString()
+			};
+		}
+		return response;
 	}
 }
 

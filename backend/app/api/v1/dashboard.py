@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, case
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -31,30 +31,24 @@ async def get_summary(
     match_count_result = await db.execute(select(func.count(Match.id)))
     total_matches = match_count_result.scalar() or 0
 
-    ticket_count_result = await db.execute(
-        select(func.count(Ticket.id)).where(Ticket.user_id == user.id)
-    )
+    ticket_count_result = await db.execute(select(func.count(Ticket.id)).where(Ticket.user_id == user.id))
     total_tickets = ticket_count_result.scalar() or 0
 
     won_result = await db.execute(
-        select(func.count(Ticket.id)).where(
-            Ticket.user_id == user.id, Ticket.status == "won"
-        )
+        select(func.count(Ticket.id)).where(Ticket.user_id == user.id, Ticket.status == "won")
     )
     won_count = won_result.scalar() or 0
     win_rate = (won_count / total_tickets * 100) if total_tickets > 0 else 0.0
 
     pnl_result = await db.execute(
-        select(func.coalesce(func.sum(LedgerEntry.amount), 0.0)).join(
-            Bankroll, LedgerEntry.bankroll_id == Bankroll.id
-        ).where(Bankroll.user_id == user.id)
+        select(func.coalesce(func.sum(LedgerEntry.amount), 0.0))
+        .join(Bankroll, LedgerEntry.bankroll_id == Bankroll.id)
+        .where(Bankroll.user_id == user.id)
     )
     total_pnl = pnl_result.scalar() or 0.0
 
     bankroll_result = await db.execute(
-        select(func.coalesce(func.sum(Bankroll.balance), 0.0)).where(
-            Bankroll.user_id == user.id
-        )
+        select(func.coalesce(func.sum(Bankroll.balance), 0.0)).where(Bankroll.user_id == user.id)
     )
     active_bankroll = bankroll_result.scalar() or 0.0
 
@@ -85,9 +79,7 @@ async def get_recent_tickets(
     user: User = Depends(get_current_user),
 ):
     stmt = (
-        select(Ticket)
-        .options(selectinload(Ticket.legs).selectinload(TicketLeg.match))
-        .where(Ticket.user_id == user.id)
+        select(Ticket).options(selectinload(Ticket.legs).selectinload(TicketLeg.match)).where(Ticket.user_id == user.id)
     )
     if date_from:
         stmt = stmt.where(Ticket.created_at >= date_from)
@@ -155,12 +147,7 @@ async def get_upcoming(
 
     out = []
     for m in matches:
-        odds_stmt = (
-            select(OddsEntry)
-            .where(OddsEntry.match_id == m.id)
-            .order_by(OddsEntry.created_at.desc())
-            .limit(1)
-        )
+        odds_stmt = select(OddsEntry).where(OddsEntry.match_id == m.id).order_by(OddsEntry.created_at.desc()).limit(1)
         odds_result = await db.execute(odds_stmt)
         odds = odds_result.scalar_one_or_none()
 

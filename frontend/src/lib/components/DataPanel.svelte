@@ -55,7 +55,7 @@
 		try {
 			let params: Record<string, unknown> = {};
 			try { params = JSON.parse(newJobParams); } catch { /* use empty */ }
-			const job = await dataApi.createJob({ type: newJobType, params });
+			const job = await dataApi.createJob({ job_type: newJobType, params });
 			jobs = [job, ...jobs];
 			showNewJob = false;
 			newJobParams = '{}';
@@ -102,6 +102,17 @@
 		const sizes = ['B', 'KB', 'MB', 'GB'];
 		const i = Math.floor(Math.log(bytes) / Math.log(k));
 		return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+	}
+
+	function jobLabel(job: ScrapeJob): string {
+		return job.job_type || 'unknown';
+	}
+
+	function jobProgress(job: ScrapeJob): number {
+		if (job.status === 'completed') return 100;
+		if (job.status === 'running') return 60;
+		if (job.status === 'failed' || job.status === 'cancelled') return 100;
+		return 0;
 	}
 </script>
 
@@ -156,14 +167,14 @@
 							{#each jobs as job (job.id)}
 								<Card>
 									<div class="flex items-center justify-between">
-										<div class="flex items-center space-x-3">
-											<Badge variant={statusBadge[job.status] || 'default'}>{job.status}</Badge>
-											<span class="text-sm font-medium text-foreground">{job.type.replace('_', ' ')}</span>
+									<div class="flex items-center space-x-3">
+										<Badge variant={statusBadge[job.status] || 'default'}>{job.status}</Badge>
+											<span class="text-sm font-medium text-foreground">{jobLabel(job).replace('_', ' ')}</span>
 										</div>
 										<div class="flex items-center space-x-3">
 											{#if job.status === 'running' || job.status === 'queued'}
 												<div class="w-24 h-1.5  bg-muted">
-													<div class="h-1.5  transition-all bg-football-green" style="width: {job.progress}%;"></div>
+													<div class="h-1.5  transition-all bg-football-green" style="width: {jobProgress(job)}%;"></div>
 												</div>
 												<Button size="sm" variant="danger" onclick={() => cancelJob(job.id)}>Cancel</Button>
 											{/if}

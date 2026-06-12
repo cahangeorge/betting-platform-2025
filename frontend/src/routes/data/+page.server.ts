@@ -1,47 +1,28 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
+import { createBackendPageLoader, summarizeBackendLoad } from '$lib/server/backend-load';
 
-export const load: PageServerLoad = async ({ cookies }) => {
+export const load: PageServerLoad = async ({ cookies, fetch }) => {
 	const token = cookies.get('access_token');
 	if (!token) {
 		redirect(302, '/login');
 	}
 
 	const apiBase = process.env.BET_API_URL || 'http://localhost:8001';
+	const { fetchJson } = createBackendPageLoader(apiBase, token, fetch);
 
-	async function fetchJson<T>(path: string, fallback: T): Promise<T> {
-		try {
-			const res = await fetch(`${apiBase}/api/v1${path}`, {
-				headers: { 'Authorization': `Bearer ${token}` },
-			});
-			if (!res.ok) return fallback;
-			return res.json() as Promise<T>;
-		} catch (e) {
-			console.error(`API fetch error for ${path}:`, e);
-			return fallback;
-		}
-	}
+	const [matchesResult, ticketsResult, predictionsResult] = await Promise.all([
+		fetchJson('/matches', { matches: [] }, 'matches'),
+		fetchJson('/tickets', [] as unknown[], 'tickets'),
+		fetchJson('/predictions/runs', [] as unknown[], 'prediction runs')
+	]);
 
-	try {
-		const [matchesRes, tickets, predictions] = await Promise.all([
-			fetchJson('/matches', { matches: [] }),
-			fetchJson('/tickets', [] as unknown[]),
-			fetchJson('/predictions/runs', [] as unknown[]),
-		]);
+	const matches = Array.isArray(matchesResult.data?.matches) ? matchesResult.data.matches : [];
 
-		const matches = Array.isArray(matchesRes?.matches) ? matchesRes.matches : [];
-
-		return {
-			matches,
-			tickets,
-			predictionRuns: predictions,
-		};
-	} catch (e) {
-		console.error('Data page server load error:', e);
-		return {
-			matches: [],
-			tickets: [],
-			predictionRuns: [],
-		};
-	}
+	return {
+		matches,
+		tickets: ticketsResult.data,
+		predictionRuns: predictionsResult.data,
+		backendStatus: summarizeBackendLoad([matchesResult, ticketsResult, predictionsResult])
+	};
 };

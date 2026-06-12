@@ -21,9 +21,9 @@
 		serverLedger?: LedgerEntry[];
 	} = $props();
 
-	let bankrolls = $state<Bankroll[]>(serverBankrolls);
-	let accounts = $state<BookmakerAccount[]>(serverAccounts);
-	let ledger = $state<LedgerEntry[]>(serverLedger);
+	let bankrolls = $state<Bankroll[]>([]);
+	let accounts = $state<BookmakerAccount[]>([]);
+	let ledger = $state<LedgerEntry[]>([]);
 	let loading = $state(false);
 	let error = $state('');
 	let activeTab = $state('bankrolls');
@@ -44,18 +44,33 @@
 
 	let formError = $state('');
 
+	$effect(() => {
+		bankrolls = serverBankrolls;
+		accounts = serverAccounts;
+		ledger = serverLedger;
+		if (selectedBankrollId === null && serverBankrolls.length > 0) {
+			selectedBankrollId = serverBankrolls[0].id;
+		}
+	});
+
 	async function loadData() {
 		loading = true;
 		error = '';
 		try {
-			const [b, a, l] = await Promise.all([
-				bankrollApi.getBankrolls(),
-				bankrollApi.getAccounts(),
-				bankrollApi.getLedger()
-			]);
+			const b = await bankrollApi.getBankrolls();
+			const primaryBankrollId = selectedBankrollId ?? b[0]?.id ?? null;
+			const [a, l] = primaryBankrollId
+				? await Promise.all([
+						bankrollApi.getAccounts(primaryBankrollId),
+						bankrollApi.getLedger(primaryBankrollId)
+					])
+				: [[], []];
 			bankrolls = b;
 			accounts = a;
 			ledger = l;
+			if (selectedBankrollId === null && b.length > 0) {
+				selectedBankrollId = b[0].id;
+			}
 		} catch (err) {
 			error = err instanceof ApiClientError ? err.message : 'Failed to load account data';
 		} finally {
@@ -87,7 +102,7 @@
 		formError = '';
 		try {
 			const acct = await bankrollApi.createAccount({
-				bookmaker_name: newAccountBookmaker,
+				bookmaker: newAccountBookmaker,
 				account_name: newAccountName,
 				balance: parseFloat(newAccountBalance),
 				bankroll_id: selectedBankrollId || bankrolls[0]?.id || 0
@@ -227,10 +242,10 @@
 							<tbody>
 								{#each accounts as acct (acct.id)}
 									<tr class="transition-colors duration-200 border-b border-border hover:bg-muted">
-										<td class="px-4 py-3 font-medium text-foreground">{acct.bookmaker_name}</td>
+										<td class="px-4 py-3 font-medium text-foreground">{acct.bookmaker}</td>
 										<td class="px-4 py-3 text-muted-foreground">{acct.account_name}</td>
 										<td class="px-4 py-3 font-mono text-football-green">{acct.balance.toFixed(2)}</td>
-										<td class="px-4 py-3 font-mono text-muted-foreground">{acct.currency}</td>
+										<td class="px-4 py-3 font-mono text-muted-foreground">Inherited</td>
 									</tr>
 								{:else}
 									<tr>

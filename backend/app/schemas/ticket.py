@@ -8,6 +8,7 @@ class TicketLegResponse(BaseModel):
 
     id: int
     ticket_id: int
+    model_prediction_id: int | None = None
     match_id: int | None = None
     selection: str
     market: str

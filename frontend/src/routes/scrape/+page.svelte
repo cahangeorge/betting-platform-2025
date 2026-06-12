@@ -148,19 +148,30 @@
 		}
 
 		try {
-			const res = await fetch(`${BASE_URL}/api/v1/data/scrape`, {
+			const createRes = await fetch(`${BASE_URL}/api/v1/data/scrape`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
-				body: JSON.stringify({ type: 'scrape_odds', params })
+				body: JSON.stringify({ job_type: 'scrape_odds', params })
 			});
 
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({ detail: 'Failed to create job' }));
-				throw new Error(err.detail || `HTTP ${res.status}`);
+			if (!createRes.ok) {
+				const err = await createRes.json().catch(() => ({ detail: 'Failed to create job' }));
+				throw new Error(err.detail || `HTTP ${createRes.status}`);
 			}
 
-			submitSuccess = 'Scrape job created successfully';
+			const createdJob = (await createRes.json()) as { id: number };
+			const executeRes = await fetch(`${BASE_URL}/api/v1/data/scrape/${createdJob.id}/execute`, {
+				method: 'POST',
+				credentials: 'include'
+			});
+
+			if (!executeRes.ok) {
+				const err = await executeRes.json().catch(() => ({ detail: 'Failed to execute job' }));
+				throw new Error(err.detail || `HTTP ${executeRes.status}`);
+			}
+
+			submitSuccess = 'Scrape job started successfully';
 			await fetchJobs();
 			setTimeout(() => (submitSuccess = ''), 4000);
 		} catch (err) {
@@ -221,6 +232,17 @@
 			cancelled: 'danger'
 		};
 		return map[status] ?? 'default';
+	}
+
+	function jobLabel(job: ScrapeJob): string {
+		return job.job_type || 'unknown';
+	}
+
+	function jobProgress(job: ScrapeJob): number {
+		if (job.status === 'completed') return 100;
+		if (job.status === 'running') return 60;
+		if (job.status === 'failed' || job.status === 'cancelled') return 100;
+		return 0;
 	}
 
 	onMount(() => {
@@ -362,12 +384,12 @@
 				{#if pastEnabled}
 					<div class="space-y-3" transition:slide={{ duration: 200 }}>
 						<div>
-							<label class="text-xs text-muted-foreground mb-1 block">From</label>
-							<Input type="date" bind:value={pastFrom} />
+							<label for="scrape-past-from" class="text-xs text-muted-foreground mb-1 block">From</label>
+							<Input id="scrape-past-from" type="date" bind:value={pastFrom} />
 						</div>
 						<div>
-							<label class="text-xs text-muted-foreground mb-1 block">To</label>
-							<Input type="date" bind:value={pastTo} />
+							<label for="scrape-past-to" class="text-xs text-muted-foreground mb-1 block">To</label>
+							<Input id="scrape-past-to" type="date" bind:value={pastTo} />
 						</div>
 					</div>
 				{/if}
@@ -390,8 +412,8 @@
 				{#if futureEnabled}
 					<div class="flex items-end gap-2" transition:slide={{ duration: 200 }}>
 						<div class="flex-1">
-							<label class="text-xs text-muted-foreground mb-1 block">Number</label>
-							<Input type="number" bind:value={futureNumber} placeholder="7" />
+							<label for="scrape-future-number" class="text-xs text-muted-foreground mb-1 block">Number</label>
+							<Input id="scrape-future-number" type="number" bind:value={futureNumber} placeholder="7" />
 						</div>
 						<div class="flex-1">
 							<Select bind:value={futureUnit} options={unitOptions} />
@@ -424,8 +446,8 @@
 			{#if autoScrape}
 				<div class="flex items-end gap-2 pl-4 border-l-2 border-football-green/30" transition:slide={{ duration: 200 }}>
 					<div class="flex-1">
-						<label class="text-xs text-muted-foreground mb-1 block">Interval</label>
-						<Input type="number" bind:value={autoIntervalNumber} placeholder="24" />
+						<label for="scrape-auto-interval" class="text-xs text-muted-foreground mb-1 block">Interval</label>
+						<Input id="scrape-auto-interval" type="number" bind:value={autoIntervalNumber} placeholder="24" />
 					</div>
 					<div class="flex-1">
 						<Select bind:value={autoIntervalUnit} options={intervalUnitOptions} />
@@ -484,7 +506,7 @@
 								onclick={() => toggleExpandJob(job.id)}
 							>
 								<td class="px-3 py-2.5 text-foreground font-medium">
-									{job.type}
+									{jobLabel(job)}
 								</td>
 								<td class="px-3 py-2.5">
 									<Badge variant={statusVariant(job.status)}>{job.status}</Badge>
@@ -500,10 +522,10 @@
 										<div class="flex-1 h-1.5 bg-muted">
 											<div
 												class="h-1.5 bg-football-green transition-all duration-500"
-												style="width: {job.progress}%"
+												style="width: {jobProgress(job)}%"
 											></div>
 										</div>
-										<span class="text-xs font-mono text-muted-foreground w-8 text-right">{job.progress}%</span>
+										<span class="text-xs font-mono text-muted-foreground w-8 text-right">{jobProgress(job)}%</span>
 									</div>
 								</td>
 								<td class="px-3 py-2.5 text-muted-foreground">
@@ -520,7 +542,7 @@
 											</div>
 											<div>
 												<span class="text-muted-foreground">Type:</span>
-												<span class="ml-2 font-mono text-foreground">{job.type}</span>
+												<span class="ml-2 font-mono text-foreground">{jobLabel(job)}</span>
 											</div>
 											{#if job.error}
 												<div class="col-span-2">

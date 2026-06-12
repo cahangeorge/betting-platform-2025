@@ -16,15 +16,29 @@
 	import { ticketsApi } from '$lib/api/tickets';
 	import { predictionsApi } from '$lib/api/predictions';
 	import type { Match, Ticket, PredictionRun } from '$lib/types';
+	import type { BackendLoadStatus } from '$lib/types/backend';
 	import Select from '$lib/components/ui/Select.svelte';
 
 	let { data }: import('./$types').PageProps = $props();
 
 	// Safe access with fallbacks — server load may not have all fields yet
 	const serverData = $derived(data ?? {});
-	let matches = $state<Match[]>((serverData as any).matches ?? []);
-	let tickets = $state<Ticket[]>((serverData as any).tickets ?? []);
-	let predictionRuns = $state<PredictionRun[]>((serverData as any).predictionRuns ?? []);
+	const backendStatus = $derived(
+		((serverData as { backendStatus?: BackendLoadStatus }).backendStatus as BackendLoadStatus | undefined) ?? {
+			state: 'ready',
+			message: null,
+			failedEndpoints: []
+		}
+	);
+	let matches = $state<Match[]>([]);
+	let tickets = $state<Ticket[]>([]);
+	let predictionRuns = $state<PredictionRun[]>([]);
+
+	$effect(() => {
+		matches = (serverData as any).matches ?? [];
+		tickets = (serverData as any).tickets ?? [];
+		predictionRuns = (serverData as any).predictionRuns ?? [];
+	});
 
 	// ── State ──────────────────────────────────────────
 	let activeTab = $state('matches');
@@ -352,6 +366,14 @@
 		</Button>
 	</div>
 
+	{#if backendStatus.state === 'degraded' && backendStatus.message}
+		<Card>
+			<div class="border-l-4 border-yellow-500 bg-yellow-500/10 p-4 text-sm">
+				<span class="font-medium">Partial backend data.</span> {backendStatus.message}
+			</div>
+		</Card>
+	{/if}
+
 	<!-- Filters -->
 	<div class="flex items-end gap-3">
 		<div class="flex-1 max-w-xs">
@@ -362,16 +384,18 @@
 			/>
 		</div>
 		<div>
-			<label class="text-xs text-muted-foreground block mb-1">From</label>
+			<label for="data-filter-from" class="text-xs text-muted-foreground block mb-1">From</label>
 			<input
+				id="data-filter-from"
 				type="date"
 				bind:value={dateFrom}
 				class="h-9 px-3 border border-border bg-background text-foreground text-sm"
 			/>
 		</div>
 		<div>
-			<label class="text-xs text-muted-foreground block mb-1">To</label>
+			<label for="data-filter-to" class="text-xs text-muted-foreground block mb-1">To</label>
 			<input
+				id="data-filter-to"
 				type="date"
 				bind:value={dateTo}
 				class="h-9 px-3 border border-border bg-background text-foreground text-sm"
@@ -385,12 +409,12 @@
 	<Tabs bind:activeTab {tabs}>
 		<!-- Data Table -->
 		<div class="mt-4">
-			{#if (activeTab === 'matches' && matchesLoading) || (activeTab === 'tickets' && ticketsLoading) || (activeTab === 'predictions' && predictionsLoading)}
-				<div class="space-y-2">
-					{#each Array(5) as _}
-						<Skeleton class="h-12 w-full" />
-					{/each}
-				</div>
+				{#if (activeTab === 'matches' && matchesLoading) || (activeTab === 'tickets' && ticketsLoading) || (activeTab === 'predictions' && predictionsLoading)}
+					<div class="space-y-2">
+						{#each Array.from({ length: 5 }, (_, index) => index) as skeletonIndex (skeletonIndex)}
+							<Skeleton class="h-12 w-full" />
+						{/each}
+					</div>
 			{:else if currentRowsFormatted.length === 0}
 				<Card>
 					<div class="py-16 text-center text-muted-foreground">
@@ -410,10 +434,10 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each currentRowsFormatted as row, i (i)}
-								<tr
-									class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
-									onclick={() => openRowDetail(row)}
+								{#each currentRowsFormatted as row, i ((row.id ?? `${activeTab}-${page}-${i}`) as string | number)}
+									<tr
+										class="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+										onclick={() => openRowDetail(row)}
 								>
 									{#each currentColumns as col (col.key)}
 										<td class="px-3 py-2.5 font-mono text-sm">
@@ -482,10 +506,10 @@
 		</DialogHeader>
 		{#if selectedRow}
 			<div class="space-y-3 max-h-[60vh] overflow-y-auto">
-				{#each Object.entries(selectedRow) as [key, value]}
-					{#if key !== 'legs' && key !== 'results' && key !== 'odds' && key !== 'parameters'}
-						<div class="flex justify-between py-1.5 border-b border-border last:border-0">
-							<span class="text-xs text-muted-foreground uppercase tracking-wider">{key.replace(/_/g, ' ')}</span>
+					{#each Object.entries(selectedRow) as [key, value] (key)}
+						{#if key !== 'legs' && key !== 'results' && key !== 'odds' && key !== 'parameters'}
+							<div class="flex justify-between py-1.5 border-b border-border last:border-0">
+								<span class="text-xs text-muted-foreground uppercase tracking-wider">{key.replace(/_/g, ' ')}</span>
 							<span class="text-sm font-mono text-foreground text-right max-w-[60%] break-words">
 								{value === null || value === undefined ? '--' : String(value)}
 							</span>
@@ -497,10 +521,10 @@
 				{#if selectedRow.legs && Array.isArray(selectedRow.legs) && selectedRow.legs.length > 0}
 					<div class="mt-4">
 						<h4 class="text-sm font-semibold text-foreground mb-2">Legs</h4>
-						{#each selectedRow.legs as leg}
-							<div class="p-2 bg-muted/30 border border-border mb-2 text-sm">
-								<div class="flex justify-between">
-									<span>{leg.home_team} vs {leg.away_team}</span>
+							{#each selectedRow.legs as leg ((leg.id ?? `${leg.match_id ?? 'match'}-${leg.selection ?? 'selection'}-${leg.odds ?? 'odds'}`) as string | number)}
+								<div class="p-2 bg-muted/30 border border-border mb-2 text-sm">
+									<div class="flex justify-between">
+										<span>{leg.home_team} vs {leg.away_team}</span>
 									<span class="font-mono">{leg.odds}</span>
 								</div>
 							</div>

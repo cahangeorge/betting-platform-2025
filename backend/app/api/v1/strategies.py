@@ -1,17 +1,18 @@
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
+from app.api.v1.catalog import CATALOG
 from app.database import get_db
 from app.models.match import Match
-from app.models.prediction import PredictionRun, ModelPrediction
+from app.models.prediction import ModelPrediction, PredictionRun
 from app.models.strategy import Strategy
 from app.models.user import User
-from app.schemas.prediction import PredictionRunResponse, PredictionRunDetailResponse
+from app.schemas.prediction import PredictionRunDetailResponse, PredictionRunResponse
 from app.schemas.strategy import (
     StrategyCreateRequest,
     StrategyResponse,
@@ -25,6 +26,54 @@ from app.services.python_bridge import BridgeError
 router = APIRouter()
 
 SUPPORTED_MARKETS = {"1x2", "btts", "ou_2_5"}
+
+
+def _parse_filter_datetime(value: str | None, *, end_of_day: bool = False) -> datetime | None:
+    if not value:
+        return None
+
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+    if len(value) == 10:
+        parsed = datetime.combine(parsed.date(), time.max if end_of_day else time.min)
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+
+    return parsed
+
+
+def _resolve_league_names(country_filters: list[str], league_filters: list[str]) -> list[str]:
+    league_names_by_id = {
+        league.id.lower(): league.name
+        for country in CATALOG
+        for league in country.leagues
+    }
+
+    if league_filters:
+        resolved = [league_names_by_id.get(league_id.lower(), league_id) for league_id in league_filters]
+    elif country_filters:
+        resolved = [
+            league.name
+            for country in CATALOG
+            if country.country in country_filters
+            for league in country.leagues
+        ]
+    else:
+        resolved = []
+
+    unique_names: list[str] = []
+    seen: set[str] = set()
+    for name in resolved:
+        key = name.lower()
+        if key not in seen:
+            seen.add(key)
+            unique_names.append(name)
+
+    return unique_names
 
 
 @router.get("", response_model=list[StrategyResponse])
@@ -129,7 +178,24 @@ async def run_strategy(
     # Resolve match IDs
     match_ids = body.match_ids
     if not match_ids:
-        match_stmt = select(Match.id).where(Match.status == "scheduled").limit(50)
+        filters = body.filters
+        match_stmt = select(Match.id).where(Match.status == "scheduled")
+
+        if filters:
+            league_names = _resolve_league_names(filters.countries, filters.leagues)
+            if league_names:
+                competition_conditions = [Match.competition.ilike(f"%{league_name}%") for league_name in league_names]
+                match_stmt = match_stmt.where(or_(*competition_conditions))
+
+            date_from = _parse_filter_datetime(filters.date_from)
+            if date_from is not None:
+                match_stmt = match_stmt.where(Match.match_date.is_not(None), Match.match_date >= date_from)
+
+            date_to = _parse_filter_datetime(filters.date_to, end_of_day=True)
+            if date_to is not None:
+                match_stmt = match_stmt.where(Match.match_date.is_not(None), Match.match_date <= date_to)
+
+        match_stmt = match_stmt.order_by(Match.match_date.asc().nulls_last(), Match.id.asc()).limit(50)
         match_result = await db.execute(match_stmt)
         match_ids = [row[0] for row in match_result.all()]
 
@@ -164,6 +230,7 @@ async def run_strategy(
 
     total_written = 0
     per_league = []
+    league_errors: list[str] = []
 
     # For each league, run the real prediction engine
     for league, league_match_ids in leagues.items():
@@ -178,56 +245,61 @@ async def run_strategy(
                 target_match_ids=league_match_ids,
             )
             written = result.get("written", 0)
-            # If bridge failed silently (written=0 despite target matches), fall back
-            if written == 0 and result.get("target_matches", 0) > 0:
-                for mid in league_match_ids:
-                    for market in markets:
-                        db.add(ModelPrediction(
-                            run_id=run.id, match_id=mid, market=market,
-                            home_prob=0.34, draw_prob=0.33, away_prob=0.33,
-                        ))
-                written = len(league_match_ids) * len(markets)
+            target_matches = result.get("target_matches", 0)
+            failed = result.get("failed", 0)
+
+            if written == 0 and target_matches > 0:
+                message = f"{league}: prediction bridge produced no results for {target_matches} target matches"
+                league_errors.append(message)
+                per_league.append({"league": league, "status": "failed", "error": message, "matches": len(league_match_ids)})
+                continue
+
+            if failed > 0:
+                message = f"{league}: {failed} target matches failed during bridge execution"
+                league_errors.append(message)
+                per_league.append(
+                    {
+                        "league": league,
+                        "status": "partial",
+                        "error": message,
+                        "matches": len(league_match_ids),
+                        "written": written,
+                    }
+                )
+            else:
+                per_league.append({"league": league, "status": "ok", "matches": len(league_match_ids), "written": written})
+
             total_written += written
-            per_league.append({"league": league, "status": "ok", "matches": len(league_match_ids)})
         except ValueError as e:
-            # Insufficient training data — place fallback predictions
-            for mid in league_match_ids:
-                for market in markets:
-                    db.add(ModelPrediction(
-                        run_id=run.id,
-                        match_id=mid,
-                        market=market,
-                        home_prob=0.34,
-                        draw_prob=0.33,
-                        away_prob=0.33,
-                    ))
-            total_written += len(league_match_ids) * len(markets)
-            per_league.append({"league": league, "status": "fallback", "error": str(e), "matches": len(league_match_ids)})
+            league_errors.append(f"{league}: {e}")
+            per_league.append(
+                {"league": league, "status": "failed", "error": str(e), "matches": len(league_match_ids)}
+            )
         except BridgeError as e:
-            # Penaltyblog bridge unavailable — place fallback predictions
-            for mid in league_match_ids:
-                for market in markets:
-                    db.add(ModelPrediction(
-                        run_id=run.id,
-                        match_id=mid,
-                        market=market,
-                        home_prob=0.34,
-                        draw_prob=0.33,
-                        away_prob=0.33,
-                    ))
-            total_written += len(league_match_ids) * len(markets)
-            per_league.append({"league": league, "status": "fallback", "error": str(e), "matches": len(league_match_ids)})
+            league_errors.append(f"{league}: {e}")
+            per_league.append(
+                {"league": league, "status": "failed", "error": str(e), "matches": len(league_match_ids)}
+            )
 
     await db.flush()
 
-    run.status = "completed"
+    if total_written == 0:
+        run.status = "failed"
+    elif league_errors:
+        run.status = "partial"
+    else:
+        run.status = "completed"
+
     run.completed_at = datetime.now(timezone.utc)
+    run.matches_count = total_written
+    run.error = " | ".join(league_errors) if league_errors else None
     await db.flush()
 
     return StrategyRunResponse(
         run_id=run.id,
         status=run.status,
         matches_count=total_written,
+        error=run.error,
     )
 
 

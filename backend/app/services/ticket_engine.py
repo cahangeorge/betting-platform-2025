@@ -1,11 +1,9 @@
-from datetime import datetime, timezone
-
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.ticket import BetPlacement, Settlement, Ticket, TicketLeg
 from app.models.bankroll import Bankroll, LedgerEntry
+from app.models.ticket import BetPlacement, Settlement, Ticket, TicketLeg
 
 
 async def create_ticket(
@@ -18,6 +16,16 @@ async def create_ticket(
 ) -> Ticket:
     if legs_data is None:
         legs_data = []
+
+    bankroll = None
+    if bankroll_id:
+        bankroll = await db.get(Bankroll, bankroll_id)
+        if bankroll is None:
+            raise ValueError(f"Bankroll {bankroll_id} not found")
+        if bankroll.user_id != user_id:
+            raise PermissionError(f"Bankroll {bankroll_id} does not belong to the current user")
+        if bankroll.balance < stake:
+            raise ValueError("Insufficient bankroll balance")
 
     combined_odds = 1.0
     for leg in legs_data:
@@ -40,6 +48,7 @@ async def create_ticket(
     for leg_data in legs_data:
         leg = TicketLeg(
             ticket_id=ticket.id,
+            model_prediction_id=leg_data.get("model_prediction_id"),
             match_id=leg_data.get("match_id"),
             selection=leg_data.get("selection", ""),
             market=leg_data.get("market", ""),
@@ -49,18 +58,16 @@ async def create_ticket(
         )
         db.add(leg)
 
-    if bankroll_id:
-        bankroll = await db.get(Bankroll, bankroll_id)
-        if bankroll and bankroll.balance >= stake:
-            bankroll.balance -= stake
-            ledger = LedgerEntry(
-                bankroll_id=bankroll_id,
-                ticket_id=ticket.id,
-                entry_type="stake",
-                amount=-stake,
-                balance_after=bankroll.balance,
-            )
-            db.add(ledger)
+    if bankroll_id and bankroll is not None:
+        bankroll.balance -= stake
+        ledger = LedgerEntry(
+            bankroll_id=bankroll_id,
+            ticket_id=ticket.id,
+            entry_type="stake",
+            amount=-stake,
+            balance_after=bankroll.balance,
+        )
+        db.add(ledger)
 
     await db.flush()
     return ticket

@@ -4,6 +4,7 @@
 		Brain,
 		Ticket,
 		Database,
+		Download,
 		LayoutDashboard,
 		User,
 		Search,
@@ -11,31 +12,114 @@
 		Plus,
 		Eye
 	} from 'lucide-svelte';
+	import { goto } from '$app/navigation';
 	import { cn } from '$lib/utils';
-	import { Separator } from './ui/separator';
 
 	interface CommandItem {
 		id: string;
 		label: string;
 		icon: typeof Home;
 		shortcut?: string;
-		category: 'page' | 'match' | 'action';
+		group: 'primary' | 'secondary' | 'match' | 'action';
 		action: () => void;
 	}
 
 	const pages: CommandItem[] = [
-		{ id: 'home', label: 'Home', icon: Home, shortcut: 'H', category: 'page', action: () => goto('/') },
-		{ id: 'predict', label: 'Predict', icon: Brain, shortcut: 'P', category: 'page', action: () => goto('/predict') },
-		{ id: 'tickets', label: 'Tickets', icon: Ticket, shortcut: 'T', category: 'page', action: () => goto('/tickets') },
-		{ id: 'data', label: 'Data', icon: Database, shortcut: 'D', category: 'page', action: () => goto('/data') },
-		{ id: 'board', label: 'Board', icon: LayoutDashboard, shortcut: 'B', category: 'page', action: () => goto('/board') },
-		{ id: 'account', label: 'Account', icon: User, shortcut: 'A', category: 'page', action: () => goto('/account') }
+		{
+			id: 'dashboard',
+			label: 'Dashboard',
+			icon: Home,
+			shortcut: 'H',
+			group: 'primary',
+			action: () => goto('/')
+		},
+		{
+			id: 'scrape',
+			label: 'Scrape',
+			icon: Download,
+			shortcut: 'S',
+			group: 'primary',
+			action: () => goto('/scrape')
+		},
+		{
+			id: 'predict',
+			label: 'Predict',
+			icon: Brain,
+			shortcut: 'P',
+			group: 'primary',
+			action: () => goto('/predict')
+		},
+		{
+			id: 'tickets',
+			label: 'Tickets',
+			icon: Ticket,
+			shortcut: 'T',
+			group: 'primary',
+			action: () => goto('/tickets')
+		},
+		{
+			id: 'account',
+			label: 'Account',
+			icon: User,
+			shortcut: 'A',
+			group: 'primary',
+			action: () => goto('/account')
+		},
+		{
+			id: 'data',
+			label: 'Data',
+			icon: Database,
+			shortcut: 'D',
+			group: 'secondary',
+			action: () => goto('/data')
+		},
+		{
+			id: 'board',
+			label: 'Board',
+			icon: LayoutDashboard,
+			shortcut: 'B',
+			group: 'secondary',
+			action: () => goto('/board')
+		},
+		{
+			id: 'live',
+			label: 'Live',
+			icon: Eye,
+			shortcut: 'L',
+			group: 'secondary',
+			action: () => goto('/live')
+		},
+		{
+			id: 'value-bets',
+			label: 'Value Bets',
+			icon: Zap,
+			group: 'secondary',
+			action: () => goto('/value-bets')
+		}
 	];
 
 	const actions: CommandItem[] = [
-		{ id: 'run-prediction', label: 'Run Prediction', icon: Zap, category: 'action', action: () => goto('/predict') },
-		{ id: 'place-bet', label: 'Place Bet', icon: Plus, category: 'action', action: () => goto('/tickets') },
-		{ id: 'view-value-bets', label: 'View Value Bets', icon: Eye, category: 'action', action: () => goto('/predict') }
+		{
+			id: 'run-prediction',
+			label: 'Run Prediction',
+			icon: Zap,
+			group: 'action',
+			action: () => goto('/predict')
+		},
+		{
+			id: 'place-bet',
+			label: 'Place Bet',
+			icon: Plus,
+			group: 'action',
+			action: () => goto('/tickets')
+		},
+		{
+			id: 'view-live',
+			label: 'Check Live Markets',
+			icon: Eye,
+			group: 'action',
+			action: () => goto('/live')
+		}
 	];
 
 	let {
@@ -50,16 +134,12 @@
 	let selectedIndex = $state(0);
 	let inputRef = $state<HTMLInputElement | null>(null);
 
-	function goto(path: string) {
-		window.location.href = path;
-	}
-
 	const allItems = $derived.by(() => {
 		const matchItems: CommandItem[] = matches.map((m) => ({
 			id: `match-${m.id}`,
 			label: `${m.home_team} vs ${m.away_team}`,
 			icon: Search,
-			category: 'match' as const,
+			group: 'match',
 			action: () => goto(`/matches/${m.id}`)
 		}));
 		return [...pages, ...matchItems, ...actions];
@@ -71,8 +151,29 @@
 			: allItems.filter(
 				(item) =>
 					item.label.toLowerCase().includes(query.toLowerCase()) ||
-					item.category.toLowerCase().includes(query.toLowerCase())
+					item.group.toLowerCase().includes(query.toLowerCase())
 			)
+	);
+
+	const sectionMeta: Record<CommandItem['group'], string> = {
+		primary: 'Core Workflow',
+		action: 'Actions',
+		secondary: 'Explore',
+		match: 'Matches'
+	};
+
+	const sectionOrder: CommandItem['group'][] = ['primary', 'action', 'secondary', 'match'];
+
+	const filteredSections = $derived.by(() =>
+		sectionOrder
+			.map((group) => ({
+				group,
+				label: sectionMeta[group],
+				items: filtered
+					.map((item, index) => ({ item, index }))
+					.filter((entry) => entry.item.group === group)
+			}))
+			.filter((section) => section.items.length > 0)
 	);
 
 	$effect(() => {
@@ -125,8 +226,16 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if open}
-	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 	<div
+		role="button"
+		aria-label="Close command palette"
+		tabindex="-1"
+		onkeydown={(e) => {
+			if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				open = false;
+			}
+		}}
 		class="fixed inset-0 z-[60] flex items-start justify-center pt-[15vh] bg-background/95 backdrop-blur-sm"
 		onclick={(e) => {
 			if (e.target === e.currentTarget) open = false;
@@ -159,32 +268,45 @@
 						</p>
 					</div>
 				{:else}
-					{#each filtered as item, i (item.id)}
-						{@const isSelected = i === selectedIndex}
-						{@const Icon = item.icon}
-						<button
-							class={cn(
-								'flex items-center justify-between w-full px-4 py-3 text-left transition-colors duration-200',
-								isSelected
-									? 'bg-football-green/8 text-football-green'
-									: 'text-foreground hover:bg-muted'
-							)}
-							onmouseenter={() => (selectedIndex = i)}
-							onclick={() => executeItem(item)}
-						>
-							<div class="flex items-center gap-3">
-								<Icon class={cn('w-4 h-4', isSelected ? 'text-football-green' : 'text-muted-foreground')} />
-								<span class="text-sm">{item.label}</span>
-								<span class="text-[10px] font-mono px-1 py-0.5 border border-border text-muted-foreground uppercase">
-									{item.category}
-								</span>
+					{#each filteredSections as section (section.group)}
+						<div class="border-b border-border/60 last:border-b-0">
+							<div class="px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+								{section.label}
 							</div>
-							{#if item.shortcut}
-								<span class="text-[10px] font-mono px-1.5 py-0.5 border border-border text-muted-foreground">
-									{item.shortcut}
-								</span>
-							{/if}
-						</button>
+							{#each section.items as entry (entry.item.id)}
+								{@const item = entry.item}
+								{@const isSelected = entry.index === selectedIndex}
+								{@const Icon = item.icon}
+								<button
+									class={cn(
+										'flex items-center justify-between w-full px-4 py-3 text-left transition-colors duration-200',
+										isSelected
+											? 'bg-football-green/8 text-football-green'
+											: 'text-foreground hover:bg-muted'
+									)}
+									onmouseenter={() => (selectedIndex = entry.index)}
+									onclick={() => executeItem(item)}
+								>
+									<div class="flex items-center gap-3">
+										<Icon
+											class={cn(
+												'w-4 h-4',
+												isSelected ? 'text-football-green' : 'text-muted-foreground'
+											)}
+										/>
+										<span class="text-sm">{item.label}</span>
+										<span class="text-[10px] font-mono px-1 py-0.5 border border-border text-muted-foreground uppercase">
+											{item.group}
+										</span>
+									</div>
+									{#if item.shortcut}
+										<span class="text-[10px] font-mono px-1.5 py-0.5 border border-border text-muted-foreground">
+											{item.shortcut}
+										</span>
+									{/if}
+								</button>
+							{/each}
+						</div>
 					{/each}
 				{/if}
 			</div>
